@@ -1,0 +1,10 @@
+#define MAX 100
+#define PI 3.14159
+#define GREETING "Hello"
+
+int main() {
+    int a = MAX;
+    float b = PI * 2;
+    char* s = GREETING;
+    return 0;
+}

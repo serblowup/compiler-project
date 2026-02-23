@@ -1,0 +1,9 @@
+1:1 KW_INT "int"
+1:5 ERROR "ERROR: Недопустимый символ!!!"
+1:7 ASSIGN "="
+1:9 INT_LITERAL "42" [42]
+1:11 SEMICOLON ";"
+2:1 IDENTIFIER "x"
+2:2 ERROR "ERROR: Недопустимый символ!!!"
+2:3 IDENTIFIER "y"
+2:4 EOF ""

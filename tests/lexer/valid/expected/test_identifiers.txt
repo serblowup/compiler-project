@@ -1,0 +1,6 @@
+1:1 IDENTIFIER "counter"
+2:1 IDENTIFIER "_temp"
+3:1 IDENTIFIER "var123"
+4:1 IDENTIFIER "x"
+5:1 IDENTIFIER "very_long_identifier_that_is_still_valid_but_not_exceeding_255_chars"
+5:69 EOF ""

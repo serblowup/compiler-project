@@ -1,0 +1,4 @@
+1:1 IDENTIFIER "abc"
+1:4 ERROR "ERROR: Недопустимый символ!!!"
+2:1 IDENTIFIER "def"
+2:4 EOF ""

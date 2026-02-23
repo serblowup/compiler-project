@@ -1,0 +1,7 @@
+1:1 KW_TRUE "true"
+1:6 AND "&&"
+1:9 KW_FALSE "false"
+1:15 OR "||"
+1:18 NOT "!"
+1:19 KW_TRUE "true"
+1:23 EOF ""

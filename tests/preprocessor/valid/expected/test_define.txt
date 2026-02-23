@@ -1,0 +1,7 @@
+
+int main() {
+    int a = 100;
+    float b = 3.14159 * 2;
+    char* s = "Hello";
+    return 0;
+}
