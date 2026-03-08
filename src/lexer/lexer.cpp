@@ -66,7 +66,7 @@ Token Lexer::lexer_make_token(TokenType type) {
 Token Lexer::lexer_make_error(const std::string& message) {
     Token token;
     token.type = TokenType::TOKEN_ERROR;
-    token.lexeme = "ERROR: " + message;
+    token.lexeme = "ERROR: [Lexer] " + message;
     token.line = start_line;
     token.column = start_column;
     token.literal_type = LiteralType::LITERAL_NONE;
@@ -364,10 +364,6 @@ Token Lexer::lexer_next_token() {
         case '|':
             if (lexer_match('|')) return lexer_make_token(TokenType::tkn_OR);
             break;
-
-        // Тернарный оператор "?" - вопросительный знак
-        case '?':
-            return lexer_make_token(TokenType::tkn_QUESTION);
     }
     
     // Токен ошибки, если символ не распознан

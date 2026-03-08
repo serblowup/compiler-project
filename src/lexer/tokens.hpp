@@ -109,11 +109,6 @@ enum class TokenType {
     tkn_INCREMENT,
     tkn_DECREMENT,
 
-    /* Тернарный оператор:
-     * - Вопросительный знак (часть тернарного оператора ? :).
-     */
-    tkn_QUESTION,
-
     /* Разделители:
      * - Точка с запятой;
      * - Запятая;
@@ -209,9 +204,6 @@ inline const char* token_type_to_string(TokenType type) {
         // Инкремент/Декремент
         case TokenType::tkn_INCREMENT: return "INC";
         case TokenType::tkn_DECREMENT: return "DEC";
-        
-        // Тернарный оператор
-        case TokenType::tkn_QUESTION: return "QUESTION";
         
         // Разделители
         case TokenType::tkn_SEMICOLON: return "SEMICOLON";

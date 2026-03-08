@@ -20,5 +20,5 @@
 4:15 MOD_ASSIGN "%="
 5:1 INC "++"
 5:4 DEC "--"
-6:1 QUESTION "?"
+6:1 ERROR "ERROR: [Lexer] Недопустимый символ!!!"
 6:2 EOF ""

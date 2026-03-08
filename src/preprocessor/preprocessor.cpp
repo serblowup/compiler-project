@@ -396,7 +396,7 @@ void Preprocessor::error(const std::string& message) {
     had_error = true;
     std::stringstream ss;
     ss << (current_filename.empty() ? "<stdin>" : current_filename)
-       << ":" << line_number << ": ошибка: " << message << "\n";
+       << ":" << line_number << ": [Preprocessor] ошибка: " << message << "\n";
     error_messages += ss.str();
 }
 

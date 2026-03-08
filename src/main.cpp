@@ -9,7 +9,7 @@
 int run_preprocess(const std::string& input_file, const std::string& output_file) {
     try {
         if (!FileIO::exists(input_file)) {
-            std::cerr << "Ошибка: Входной файл '" << input_file << "' не найден\n";
+            std::cerr << "[Preprocessor] Ошибка: Входной файл '" << input_file << "' не найден\n";
             return 1;
         }
         
@@ -26,7 +26,7 @@ int run_preprocess(const std::string& input_file, const std::string& output_file
         return 0;
         
     } catch (const std::exception& e) {
-        std::cerr << "Ошибка: " << e.what() << "\n";
+        std::cerr << "[Preprocessor] Ошибка: " << e.what() << "\n";
         return 1;
     }
 }
@@ -34,7 +34,7 @@ int run_preprocess(const std::string& input_file, const std::string& output_file
 int run_lexer(const std::string& input_file, const std::string& output_file) {
     try {
         if (!FileIO::exists(input_file)) {
-            std::cerr << "Ошибка: Входной файл '" << input_file << "' не найден\n";
+            std::cerr << "[Lexer] Ошибка: Входной файл '" << input_file << "' не найден\n";
             return 1;
         }
         
@@ -62,7 +62,7 @@ int run_lexer(const std::string& input_file, const std::string& output_file) {
             }
             
             if (token.type == TokenType::TOKEN_ERROR) {
-                std::cerr << "Ошибка: " << token.lexeme << "\n";
+                std::cerr << "[Lexer] Ошибка: " << token.lexeme << "\n";
             }
         }
         
@@ -73,7 +73,7 @@ int run_lexer(const std::string& input_file, const std::string& output_file) {
         return 0;
         
     } catch (const std::exception& e) {
-        std::cerr << "Ошибка: " << e.what() << "\n";
+        std::cerr << "[Lexer] Ошибка: " << e.what() << "\n";
         return 1;
     }
 }
