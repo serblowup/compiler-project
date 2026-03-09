@@ -1,28 +1,20 @@
 #!/bin/bash
 
-# Функции для печати
-print_green() { echo "$1"; }
-print_red() { echo "$1"; }
-print_yellow() { echo "$1"; }
-print_blue() { echo "$1"; }
-
 echo "Запуск всех тестов"
 
 # Компилируем проект
-echo "Компиляция проекта..."
+echo -n "Компиляция проекта... "
 make build > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "Ошибка: не удалось скомпилировать проект!!!"
     exit 1
 fi
-echo "Компиляция завершена"
-echo ""
+echo "Готово"
 
 TOTAL_PASSED=0
 TOTAL_FAILED=0
 TOTAL_TESTS=0
 
-# Функция для запуска тестов и подсчета результатов
 run_test_suite() {
     local script=$1
     local test_dir=$2
@@ -33,7 +25,6 @@ run_test_suite() {
         $script "$test_dir" "$expected_dir" "$category"
         local result=$?
         
-        # Подсчитываем количество тестов в директории
         local count=$(ls -1 "$test_dir"/*.src 2>/dev/null | wc -l)
         TOTAL_TESTS=$((TOTAL_TESTS + count))
         
@@ -42,25 +33,56 @@ run_test_suite() {
         else
             TOTAL_FAILED=$((TOTAL_FAILED + count))
         fi
+        echo ""
     fi
+}
+
+run_integration_tests() {
+    local script=$1
+    $script
+    local result=$?
+    
+    local count=$(ls -1 examples/*.src 2>/dev/null | wc -l)
+    TOTAL_TESTS=$((TOTAL_TESTS + count))
+    
+    if [ $result -eq 0 ]; then
+        TOTAL_PASSED=$((TOTAL_PASSED + count))
+    else
+        TOTAL_FAILED=$((TOTAL_FAILED + count))
+    fi
+    echo ""
 }
 
 # Делаем скрипты исполняемыми
 chmod +x tests/scripts/*.sh 2>/dev/null || true
 
 # Тесты лексера
+echo "Тесты лексера"
 run_test_suite "./tests/scripts/test_lexer.sh" "tests/lexer/valid" "tests/lexer/valid/expected" "LEXER-VALID"
 run_test_suite "./tests/scripts/test_lexer.sh" "tests/lexer/invalid" "tests/lexer/invalid/expected" "LEXER-INVALID"
 
 # Тесты препроцессора
+echo "Тесты препроцессора"
 run_test_suite "./tests/scripts/test_preprocessor.sh" "tests/preprocessor/valid" "tests/preprocessor/valid/expected" "PREPROC-VALID"
 run_test_suite "./tests/scripts/test_preprocessor.sh" "tests/preprocessor/invalid" "tests/preprocessor/invalid/expected" "PREPROC-INVALID"
 
-echo "Итоговый результат"
+# Тесты парсера
+echo "Тесты парсера"
+run_test_suite "./tests/scripts/test_parser.sh" "tests/parser/valid" "tests/parser/valid/expected" "PARSER-VALID"
+run_test_suite "./tests/scripts/test_parser.sh" "tests/parser/invalid" "tests/parser/invalid/expected" "PARSER-INVALID"
+
+# Интеграционные тесты
+echo "Интеграционные тесты"
+run_integration_tests "./tests/scripts/test_integration.sh"
+
+echo "[Итоговый результат]"
 echo "Всего тестов: $TOTAL_TESTS"
-print_green "Успешно: $TOTAL_PASSED"
-print_red "Провалено: $TOTAL_FAILED"
-echo ""
+echo "Успешно: $TOTAL_PASSED"
+if [ $TOTAL_FAILED -gt 0 ]; then
+    echo "Провалено: $TOTAL_FAILED"
+else
+    echo "Провалено: $TOTAL_FAILED"
+fi
 
 if [ $TOTAL_FAILED -gt 0 ]; then
     exit 1

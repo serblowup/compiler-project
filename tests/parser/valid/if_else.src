@@ -1,0 +1,19 @@
+fn test(int x) -> int {
+    if (x > 0) {
+        return x;
+    } else {
+        return -x;
+    }
+}
+
+fn nested(int a, int b) -> int {
+    if (a > b) {
+        if (a > 0) {
+            return a;
+        } else {
+            return 0;
+        }
+    } else {
+        return b;
+    }
+}

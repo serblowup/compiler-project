@@ -13,12 +13,15 @@ COVERAGE_DIR = tests/coverage
 # Все исходные файлы
 SOURCES = $(wildcard $(SRCDIR)/*.cpp) \
           $(wildcard $(SRCDIR)/lexer/*.cpp) \
+          $(wildcard $(SRCDIR)/parser/*.cpp) \
           $(wildcard $(SRCDIR)/preprocessor/*.cpp) \
           $(wildcard $(SRCDIR)/utils/*.cpp)
 OBJECTS = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOURCES))
 OBJECTS_COV = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR_COV)/%.o,$(SOURCES))
 
-.PHONY: all clean build test scripts coverage
+.PHONY: all clean build test scripts coverage coverage-simple \
+        test-lexer test-preproc test-parser test-parser-valid test-parser-invalid test-roundtrip test-integration \
+        lexer preprocess parse
 
 all: $(TARGET)
 
@@ -64,6 +67,15 @@ test-preproc: scripts $(TARGET)
 		./tests/scripts/test_preprocessor.sh tests/preprocessor/invalid tests/preprocessor/invalid/expected "PREPROC-INVALID"; \
 	fi
 
+# Запуск тестов парсера
+test-parser: scripts $(TARGET)
+	@./tests/scripts/test_parser.sh tests/parser/valid tests/parser/valid/expected "PARSER-VALID"
+	@./tests/scripts/test_parser.sh tests/parser/invalid tests/parser/invalid/expected "PARSER-INVALID"
+
+# Запуск интеграционных тестов
+test-integration: scripts $(TARGET)
+	@./tests/scripts/test_integration.sh
+
 # Запуск тестов с coverage
 coverage: scripts build-cov
 	@echo "Запуск тестов с coverage..."
@@ -71,21 +83,18 @@ coverage: scripts build-cov
 	@mkdir -p $(COVERAGE_DIR) || true
 	@mkdir -p $(COVERAGE_DIR)/data || true
 
-	# Запускаем тесты лексера valid
 	@for test_file in tests/lexer/valid/*.src; do \
 		if [ -f "$$test_file" ]; then \
 			./$(TARGET_COV) lex --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
 		fi \
 	done
 
-	# Запускаем тесты лексера invalid
 	@for test_file in tests/lexer/invalid/*.src; do \
 		if [ -f "$$test_file" ]; then \
 			./$(TARGET_COV) lex --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
 		fi \
 	done
 
-	# Запускаем тесты препроцессора valid
 	@if [ -d "tests/preprocessor/valid" ]; then \
 		for test_file in tests/preprocessor/valid/*.src; do \
 			if [ -f "$$test_file" ]; then \
@@ -94,7 +103,6 @@ coverage: scripts build-cov
 		done \
 	fi
 
-	# Запускаем тесты препроцессора invalid
 	@if [ -d "tests/preprocessor/invalid" ]; then \
 		for test_file in tests/preprocessor/invalid/*.src; do \
 			if [ -f "$$test_file" ]; then \
@@ -103,10 +111,35 @@ coverage: scripts build-cov
 		done \
 	fi
 
+	@if [ -d "tests/parser/valid" ]; then \
+		for test_file in tests/parser/valid/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				echo "Запуск $$test_file"; \
+				./$(TARGET_COV) parse --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
+	@if [ -d "tests/parser/invalid" ]; then \
+		for test_file in tests/parser/invalid/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				echo "Запуск $$test_file"; \
+				./$(TARGET_COV) parse --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
+	@for test_file in examples/*.src; do \
+		if [ -f "$$test_file" ]; then \
+			echo "Запуск $$test_file"; \
+			./$(TARGET_COV) parse --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+		fi \
+	done
+
 	# Создаем отчет
 	@echo "Генерация отчета о покрытии..."
 	@echo "=============================================" > $(COVERAGE_DIR)/coverage_report.txt || true
-	@echo "ОТчёт о покрытии" >> $(COVERAGE_DIR)/coverage_report.txt || true
+	@echo "Отчёт о покрытии" >> $(COVERAGE_DIR)/coverage_report.txt || true
 	@echo "=============================================" >> $(COVERAGE_DIR)/coverage_report.txt || true
 	@echo "" >> $(COVERAGE_DIR)/coverage_report.txt || true
 	
@@ -116,7 +149,7 @@ coverage: scripts build-cov
 		if [ -f $(COVERAGE_DIR)/coverage.info ]; then \
 			lcov --remove $(COVERAGE_DIR)/coverage.info '/usr/*' '*/googletest/*' '*/test/*' --output-file $(COVERAGE_DIR)/coverage_filtered.info --ignore-errors mismatch,negative,empty 2>/dev/null || true; \
 			if [ -f $(COVERAGE_DIR)/coverage_filtered.info ]; then \
-				echo "ОБЩЕЕ ПОКРЫТИЕ:" >> $(COVERAGE_DIR)/coverage_report.txt; \
+				echo "Общее покрытие:" >> $(COVERAGE_DIR)/coverage_report.txt; \
 				echo "---------------------------------------------" >> $(COVERAGE_DIR)/coverage_report.txt; \
 				lcov --summary $(COVERAGE_DIR)/coverage_filtered.info 2>&1 | grep -E "lines|functions|branches" >> $(COVERAGE_DIR)/coverage_report.txt || true; \
 				echo "---------------------------------------------" >> $(COVERAGE_DIR)/coverage_report.txt; \
@@ -137,13 +170,11 @@ coverage-simple:
 	@echo "Запуск тестов с coverage (простой отчет)..."
 	@$(MAKE) build-cov > /dev/null 2>&1 || true
 
-	# Запускаем тесты
 	@for test_file in tests/lexer/valid/*.src; do \
 		if [ -f "$$test_file" ]; then \
 			./$(TARGET_COV) lex --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
 		fi \
 	done
-
 	@for test_file in tests/lexer/invalid/*.src; do \
 		if [ -f "$$test_file" ]; then \
 			./$(TARGET_COV) lex --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
@@ -157,7 +188,6 @@ coverage-simple:
 			fi \
 		done \
 	fi
-
 	@if [ -d "tests/preprocessor/invalid" ]; then \
 		for test_file in tests/preprocessor/invalid/*.src; do \
 			if [ -f "$$test_file" ]; then \
@@ -165,6 +195,27 @@ coverage-simple:
 			fi \
 		done \
 	fi
+
+	@if [ -d "tests/parser/valid" ]; then \
+		for test_file in tests/parser/valid/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				./$(TARGET_COV) parse --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+	@if [ -d "tests/parser/invalid" ]; then \
+		for test_file in tests/parser/invalid/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				./$(TARGET_COV) parse --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
+	@for test_file in examples/*.src; do \
+		if [ -f "$$test_file" ]; then \
+			./$(TARGET_COV) parse --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+		fi \
+	done
 
 	@echo "Покрытие по файлам"
 	@for src_file in $(SOURCES); do \
@@ -195,3 +246,16 @@ preprocess: $(TARGET)
 		exit 1; \
 	fi
 	./$(TARGET) preprocess --input $(INPUT) --output $(OUTPUT)
+
+# Запуск парсера на отдельном файле
+parse: $(TARGET)
+	@if [ -z "$(INPUT)" ] || [ -z "$(OUTPUT)" ]; then \
+		echo "Использование: make parse INPUT=<файл> OUTPUT=<файл> [FORMAT=text|dot|json]"; \
+		echo "Пример: make parse INPUT=examples/factorial.src OUTPUT=ast.txt FORMAT=text"; \
+		exit 1; \
+	fi
+	@if [ -z "$(FORMAT)" ]; then \
+		./$(TARGET) parse --input $(INPUT) --output $(OUTPUT); \
+	else \
+		./$(TARGET) parse --input $(INPUT) --output $(OUTPUT) --format $(FORMAT); \
+	fi

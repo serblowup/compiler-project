@@ -63,6 +63,8 @@ assign_mod = "%=" ;
 increment = "++" ;
 decrement = "--" ;
 
+(Стрелка)
+arrow = "->" ;
 ```
 
 ### 1.5. Разделители

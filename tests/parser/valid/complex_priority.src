@@ -1,0 +1,12 @@
+fn test() -> int {
+    int a = -5 + 3 * 2;        // = -5 + (3 * 2) = 1
+    bool b = !true && false;    // = (!true) && false = false
+    bool c = 5 > 3 && 2 < 4;    // = (5 > 3) && (2 < 4) = true
+    bool d = a == 1 || b;       // = (a == 1) || b = true
+    
+    // Проверка ассоциативности
+    int e = 1 + 2 + 3;          // левая: ((1+2)+3)
+    int f = a = b = 5;          // правая: (a = (b = 5))
+    
+    return a + e - f;
+}

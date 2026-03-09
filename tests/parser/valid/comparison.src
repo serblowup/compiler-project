@@ -1,0 +1,9 @@
+fn test() -> bool {
+    bool a = 5 < 10;
+    bool b = 5 > 10;
+    bool c = 5 <= 5;
+    bool d = 5 >= 5;
+    bool e = 5 == 5;
+    bool f = 5 != 6;
+    return a && b && c && d && e && f;
+}

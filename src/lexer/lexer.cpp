@@ -319,8 +319,9 @@ Token Lexer::lexer_next_token() {
             if (lexer_match('=')) return lexer_make_token(TokenType::tkn_ASSIGNMENT_AFTER_ADDITION);
             return lexer_make_token(TokenType::tkn_ADDITION);
 
-        // Проверка символа "-" - "Декремент" или "Присваивание после вычитания" или "Вычитание"
+        // Проверка символа "-" - "Стрелка", "Декремент", "Присваивание после вычитания" или "Вычитание"
         case '-':
+            if (lexer_match('>')) return lexer_make_token(TokenType::tkn_ARROW);
             if (lexer_match('-')) return lexer_make_token(TokenType::tkn_DECREMENT);
             if (lexer_match('=')) return lexer_make_token(TokenType::tkn_ASSIGNMENT_AFTER_SUBTRACTION);
             return lexer_make_token(TokenType::tkn_SUBTRACTION);

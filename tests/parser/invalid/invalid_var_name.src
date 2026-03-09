@@ -1,0 +1,4 @@
+fn test() -> int {
+    int 123abc = 5;
+    return 0;
+}

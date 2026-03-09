@@ -1,0 +1,6 @@
+Program [line 1]:
+  FunctionDecl [line 1]: main -> int
+    body:
+      Block [line 1]:
+        ReturnStmt [line 2]:
+          Literal [line 2]: int 0

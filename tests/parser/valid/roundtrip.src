@@ -1,0 +1,11 @@
+fn test(int a, int b) -> int {
+    int result = 0;
+    if (a > b) {
+        for (int i = 0; i < a; i = i + 1) {
+            result = result + i;
+        }
+    } else {
+        result = b;
+    }
+    return result;
+}

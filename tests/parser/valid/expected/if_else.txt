@@ -1,0 +1,47 @@
+Program [line 1]:
+  FunctionDecl [line 1]: test -> int
+    parameters:
+      Param [line 1]: int x
+    body:
+      Block [line 1]:
+        IfStmt [line 2]:
+          condition: Binary [line 2]: GT
+          condition:   left: Identifier [line 2]: x
+          condition:   right: Literal [line 2]: int 0
+          then:
+            Block [line 2]:
+              ReturnStmt [line 3]:
+                Identifier [line 3]: x
+          else:
+            Block [line 4]:
+              ReturnStmt [line 5]:
+                Unary [line 5]: SUB
+                  Identifier [line 5]: x
+  FunctionDecl [line 9]: nested -> int
+    parameters:
+      Param [line 9]: int a
+      Param [line 9]: int b
+    body:
+      Block [line 9]:
+        IfStmt [line 10]:
+          condition: Binary [line 10]: GT
+          condition:   left: Identifier [line 10]: a
+          condition:   right: Identifier [line 10]: b
+          then:
+            Block [line 10]:
+              IfStmt [line 11]:
+                condition: Binary [line 11]: GT
+                condition:   left: Identifier [line 11]: a
+                condition:   right: Literal [line 11]: int 0
+                then:
+                  Block [line 11]:
+                    ReturnStmt [line 12]:
+                      Identifier [line 12]: a
+                else:
+                  Block [line 13]:
+                    ReturnStmt [line 14]:
+                      Literal [line 14]: int 0
+          else:
+            Block [line 16]:
+              ReturnStmt [line 17]:
+                Identifier [line 17]: b

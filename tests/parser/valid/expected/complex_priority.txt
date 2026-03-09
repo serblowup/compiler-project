@@ -1,0 +1,48 @@
+Program [line 1]:
+  FunctionDecl [line 1]: test -> int
+    body:
+      Block [line 1]:
+        VarDecl [line 2]: int a =
+          Binary [line 2]: ADD
+            left: Unary [line 2]: SUB
+            left:   Literal [line 2]: int 5
+            right: Binary [line 2]: MUL
+            right:   left: Literal [line 2]: int 3
+            right:   right: Literal [line 2]: int 2
+        VarDecl [line 3]: bool b =
+          Binary [line 3]: AND
+            left: Unary [line 3]: NOT
+            left:   Literal [line 3]: bool true
+            right: Literal [line 3]: bool false
+        VarDecl [line 4]: bool c =
+          Binary [line 4]: AND
+            left: Binary [line 4]: GT
+            left:   left: Literal [line 4]: int 5
+            left:   right: Literal [line 4]: int 3
+            right: Binary [line 4]: LT
+            right:   left: Literal [line 4]: int 2
+            right:   right: Literal [line 4]: int 4
+        VarDecl [line 5]: bool d =
+          Binary [line 5]: OR
+            left: Binary [line 5]: EQ
+            left:   left: Identifier [line 5]: a
+            left:   right: Literal [line 5]: int 1
+            right: Identifier [line 5]: b
+        VarDecl [line 8]: int e =
+          Binary [line 8]: ADD
+            left: Binary [line 8]: ADD
+            left:   left: Literal [line 8]: int 1
+            left:   right: Literal [line 8]: int 2
+            right: Literal [line 8]: int 3
+        VarDecl [line 9]: int f =
+          Assignment [line 9]: ASSIGN
+            target: Identifier [line 9]: a
+            value: Assignment [line 9]: ASSIGN
+            value:   target: Identifier [line 9]: b
+            value:   value: Literal [line 9]: int 5
+        ReturnStmt [line 11]:
+          Binary [line 11]: SUB
+            left: Binary [line 11]: ADD
+            left:   left: Identifier [line 11]: a
+            left:   right: Identifier [line 11]: e
+            right: Identifier [line 11]: f

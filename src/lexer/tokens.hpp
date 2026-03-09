@@ -104,10 +104,12 @@ enum class TokenType {
 
     /* Прочие операторы:
      * - Инкремент;
-     * - Декремент.
+     * - Декремент;
+     * - Стрелка.
      */
     tkn_INCREMENT,
     tkn_DECREMENT,
+    tkn_ARROW,
 
     /* Разделители:
      * - Точка с запятой;
@@ -201,9 +203,10 @@ inline const char* token_type_to_string(TokenType type) {
         case TokenType::tkn_ASSIGNMENT_AFTER_SEGMENTATION: return "DIV_ASSIGN";
         case TokenType::tkn_ASSIGNMENT_AFTER_MODULO: return "MOD_ASSIGN";
         
-        // Инкремент/Декремент
+        // Инкремент/Декремент/Стрелка
         case TokenType::tkn_INCREMENT: return "INC";
         case TokenType::tkn_DECREMENT: return "DEC";
+        case TokenType::tkn_ARROW: return "ARROW";
         
         // Разделители
         case TokenType::tkn_SEMICOLON: return "SEMICOLON";

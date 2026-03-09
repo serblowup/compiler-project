@@ -1,0 +1,28 @@
+Program [line 1]:
+  FunctionDecl [line 1]: test -> int
+    body:
+      Block [line 1]:
+        VarDecl [line 2]: int sum =
+          Literal [line 2]: int 0
+        ForStmt [line 3]:
+          init:
+            VarDecl [line 3]: int i =
+              Literal [line 3]: int 0
+          condition: Binary [line 3]: LT
+          condition:   left: Identifier [line 3]: i
+          condition:   right: Literal [line 3]: int 5
+          update: Assignment [line 3]: ASSIGN
+          update:   target: Identifier [line 3]: i
+          update:   value: Binary [line 3]: ADD
+          update:   value:   left: Identifier [line 3]: i
+          update:   value:   right: Literal [line 3]: int 1
+          body:
+            Block [line 3]:
+              ExprStmt [line 4]:
+                Assignment [line 4]: ASSIGN
+                  target: Identifier [line 4]: sum
+                  value: Binary [line 4]: ADD
+                  value:   left: Identifier [line 4]: sum
+                  value:   right: Identifier [line 4]: i
+        ReturnStmt [line 6]:
+          Identifier [line 6]: sum
