@@ -7,67 +7,32 @@
 - Терминалы в кавычках "if"
 
 ## Терминалы
-
 ```
-KW_IF        : "if"
-KW_ELSE      : "else"
-KW_WHILE     : "while"
-KW_FOR       : "for"
-KW_INT       : "int"
-KW_FLOAT     : "float"
-KW_BOOL      : "bool"
-KW_RETURN    : "return"
-KW_TRUE      : "true"
-KW_FALSE     : "false"
-KW_VOID      : "void"
-KW_STRUCT    : "struct"
-KW_FN        : "fn"
+Ключевые слова:
+  "if" | "else" | "while" | "for" | "int" | "float" | "bool" | "return"
+  | "true" | "false" | "void" | "struct" | "fn"
 
-IDENTIFIER   : буква {буква|цифра|"_"}
-INT_LITERAL  : цифра {цифра}
-FLOAT_LITERAL: цифра {цифра} "." цифра {цифра}
-STRING_LITERAL: '"' {символ-'"'} '"'
+Идентификаторы и литералы:
+  identifier   : буква {буква|цифра|"_"}
+  int_literal  : цифра {цифра}
+  float_literal: цифра {цифра} "." цифра {цифра}
+  string_literal: '"' {символ-'"'} '"'
 
-OPERATOR_ASSIGN          : "="
-OPERATOR_ADD_ASSIGN      : "+="
-OPERATOR_SUB_ASSIGN      : "-="
-OPERATOR_MUL_ASSIGN      : "*="
-OPERATOR_DIV_ASSIGN      : "/="
-OPERATOR_MOD_ASSIGN      : "%="
-OPERATOR_PLUS            : "+"
-OPERATOR_MINUS           : "-"
-OPERATOR_MUL             : "*"
-OPERATOR_DIV             : "/"
-OPERATOR_MOD             : "%"
-OPERATOR_EQ              : "=="
-OPERATOR_NEQ             : "!="
-OPERATOR_LT              : "<"
-OPERATOR_GT              : ">"
-OPERATOR_LTE             : "<="
-OPERATOR_GTE             : ">="
-OPERATOR_AND             : "&&"
-OPERATOR_OR              : "||"
-OPERATOR_NOT             : "!"
-OPERATOR_INCREMENT       : "++"
-OPERATOR_DECREMENT       : "--"
+Операторы:
+  "="  | "+=" | "-=" | "*=" | "/=" | "%="  (присваивания)
+  "+"  | "-"  | "*"  | "/"  | "%"          (арифметические)
+  "==" | "!=" | "<"  | ">"  | "<=" | ">="  (отношения)
+  "&&" | "||" | "!"                        (логические)
+  "++" | "--"                              (инкремент/декремент)
+  "->" | "."                               (возвращаемый тип функции, доступ к полю)
 
-SEMICOLON    : ";"
-COMMA        : ","
-DOT          : "."
-COLON        : ":"
-LPAREN       : "("
-RPAREN       : ")"
-LBRACE       : "{"
-RBRACE       : "}"
-LBRACKET     : "["
-RBRACKET     : "]"
-ARROW        : "->"
+Разделители:
+  ";" | "," | ":" | "(" | ")" | "{" | "}" | "[" | "]"
 
-EOF          : конец файла
+EOF : конец файла
 ```
 
 ## Таблица приоритетов операторов
-
 | Уровень | Категория операторов | Операторы | Ассоциативность |
 |---------|----------------------|-----------|-----------------|
 | 1 | Первичные выражения | литералы, идентификаторы, `(expr)` | - |
@@ -78,7 +43,7 @@ EOF          : конец файла
 | 6 | Отношения | `<` `>` `<=` `>=` | Левая |
 | 7 | Равенство | `==` `!=` | Левая |
 | 8 | Логическое И | `&&` | Левая |
-| 9 | Логическое ИЛИ | `\|\|` | Левая |
+| 9 | Логическое ИЛИ | `||` | Левая |
 | 10 | Присваивание | `=` `+=` `-=` `*=` `/=` `%=` | Правая |
 
 ## LL(1)-грамматика
@@ -94,59 +59,59 @@ DeclarationList ::= Declaration DeclarationList | ε
 ```
 Declaration ::= FunctionDecl | StructDecl | VarDecl
 
-FunctionDecl ::= KW_FN IDENTIFIER LPAREN ParameterList RPAREN FunctionReturn Block
+FunctionDecl ::= "fn" identifier "(" ParameterList ")" FunctionReturn Block
 
-FunctionReturn ::= ARROW Type | ε
+FunctionReturn ::= "->" Type | ε
 
 ParameterList ::= Parameter ParametersRest | ε
 
-ParametersRest ::= COMMA Parameter ParametersRest | ε
+ParametersRest ::= "," Parameter ParametersRest | ε
 
-Parameter ::= Type IDENTIFIER
+Parameter ::= Type identifier
 
-StructDecl ::= KW_STRUCT IDENTIFIER LBRACE FieldList RBRACE
+StructDecl ::= "struct" identifier "{" FieldList "}"
 
 FieldList ::= Field FieldList | ε
 
-Field ::= Type IDENTIFIER SEMICOLON
+Field ::= Type identifier ";"
 
-VarDecl ::= Type IDENTIFIER VarInitializer SEMICOLON
+VarDecl ::= Type identifier VarInitializer ";"
 
-VarInitializer ::= OPERATOR_ASSIGN Expression | ε
+VarInitializer ::= "=" Expression | ε
 ```
 
 ### Типы
 ```
-Type ::= KW_INT | KW_FLOAT | KW_BOOL | KW_VOID | KW_STRUCT IDENTIFIER | IDENTIFIER
+Type ::= "int" | "float" | "bool" | "void" | "struct" identifier | identifier
 ```
 
 ### Инструкции 
 ```
 Statement ::= BlockStmt | IfStmt | WhileStmt | ForStmt | ReturnStmt | ExprStmt | VarDecl | EmptyStmt
 
-BlockStmt ::= LBRACE StatementList RBRACE
+BlockStmt ::= "{" StatementList "}"
 
-IfStmt ::= KW_IF LPAREN Expression RPAREN Statement ElsePart
+IfStmt ::= "if" "(" Expression ")" Statement ElsePart
 
-ElsePart ::= KW_ELSE Statement | ε
+ElsePart ::= "else" Statement | ε
 
-WhileStmt ::= KW_WHILE LPAREN Expression RPAREN Statement
+WhileStmt ::= "while" "(" Expression ")" Statement
 
-ForStmt ::= KW_FOR LPAREN ForInit SEMICOLON ForCondition SEMICOLON ForUpdate RPAREN Statement
+ForStmt ::= "for" "(" ForInit ";" ForCondition ";" ForUpdate ")" Statement
 
-ForInit ::= VarDecl | ExprStmt | SEMICOLON
+ForInit ::= VarDecl | ExprStmt | ";"
 
 ForCondition ::= Expression | ε
 
 ForUpdate ::= Expression | ε
 
-ReturnStmt ::= KW_RETURN ReturnExpr SEMICOLON
+ReturnStmt ::= "return" ReturnExpr ";"
 
 ReturnExpr ::= Expression | ε
 
-ExprStmt ::= Expression SEMICOLON
+ExprStmt ::= Expression ";"
 
-EmptyStmt ::= SEMICOLON
+EmptyStmt ::= ";"
 
 StatementList ::= Statement StatementList | ε
 ```
@@ -159,43 +124,43 @@ AssignmentExpr ::= LogicalOrExpr AssignmentRest
 
 AssignmentRest ::= AssignmentOperator AssignmentExpr | ε
 
-AssignmentOperator ::= OPERATOR_ASSIGN | OPERATOR_ADD_ASSIGN | OPERATOR_SUB_ASSIGN | OPERATOR_MUL_ASSIGN | OPERATOR_DIV_ASSIGN | OPERATOR_MOD_ASSIGN
+AssignmentOperator ::= "=" | "+=" | "-=" | "*=" | "/=" | "%="
 
 LogicalOrExpr ::= LogicalAndExpr LogicalOrRest
 
-LogicalOrRest ::= OPERATOR_OR LogicalAndExpr LogicalOrRest | ε
+LogicalOrRest ::= "||" LogicalAndExpr LogicalOrRest | ε
 
 LogicalAndExpr ::= EqualityExpr LogicalAndRest
 
-LogicalAndRest ::= OPERATOR_AND EqualityExpr LogicalAndRest | ε
+LogicalAndRest ::= "&&" EqualityExpr LogicalAndRest | ε
 
 EqualityExpr ::= RelationalExpr EqualityRest
 
 EqualityRest ::= EqualityOperator RelationalExpr EqualityRest | ε
 
-EqualityOperator ::= OPERATOR_EQ | OPERATOR_NEQ
+EqualityOperator ::= "==" | "!="
 
 RelationalExpr ::= AdditiveExpr RelationalRest
 
 RelationalRest ::= RelationalOperator AdditiveExpr RelationalRest | ε
 
-RelationalOperator ::= OPERATOR_LT | OPERATOR_GT | OPERATOR_LTE | OPERATOR_GTE
+RelationalOperator ::= "<" | ">" | "<=" | ">="
 
 AdditiveExpr ::= MultiplicativeExpr AdditiveRest
 
 AdditiveRest ::= AdditiveOperator MultiplicativeExpr AdditiveRest | ε
 
-AdditiveOperator ::= OPERATOR_PLUS | OPERATOR_MINUS
+AdditiveOperator ::= "+" | "-"
 
 MultiplicativeExpr ::= UnaryExpr MultiplicativeRest
 
 MultiplicativeRest ::= MultiplicativeOperator UnaryExpr MultiplicativeRest | ε
 
-MultiplicativeOperator ::= OPERATOR_MUL | OPERATOR_DIV | OPERATOR_MOD
+MultiplicativeOperator ::= "*" | "/" | "%"
 
 UnaryExpr ::= UnaryOperator UnaryExpr | PostfixExpr
 
-UnaryOperator ::= OPERATOR_MINUS | OPERATOR_NOT | OPERATOR_INCREMENT | OPERATOR_DECREMENT
+UnaryOperator ::= "-" | "!" | "++" | "--"
 
 PostfixExpr ::= PrimaryExpr PostfixRest
 
@@ -203,67 +168,61 @@ PostfixRest ::= PostfixOperator PostfixRest | ε
 
 PostfixOperator ::= CallSuffix | DotSuffix | IncrementSuffix | DecrementSuffix
 
-CallSuffix ::= LPAREN ArgumentList RPAREN
+CallSuffix ::= "(" ArgumentList ")"
 
-DotSuffix ::= DOT IDENTIFIER
+DotSuffix ::= "." identifier
 
-IncrementSuffix ::= OPERATOR_INCREMENT
+IncrementSuffix ::= "++"
 
-DecrementSuffix ::= OPERATOR_DECREMENT
+DecrementSuffix ::= "--"
 
-PrimaryExpr ::= Literal | IDENTIFIER | LPAREN Expression RPAREN
+PrimaryExpr ::= Literal | identifier | "(" Expression ")"
 
-Literal ::= INT_LITERAL | FLOAT_LITERAL | STRING_LITERAL | KW_TRUE | KW_FALSE
+Literal ::= int_literal | float_literal | string_literal | "true" | "false"
 
 ArgumentList ::= Expression ArgumentRest | ε
 
-ArgumentRest ::= COMMA Expression ArgumentRest | ε
+ArgumentRest ::= "," Expression ArgumentRest | ε
 ```
 
 ## Множества FIRST и FOLLOW
 
 ### Множества FIRST
 ```
-FIRST(Program) = { KW_FN, KW_STRUCT, KW_INT, KW_FLOAT, KW_BOOL, KW_VOID, IDENTIFIER, ε }
-FIRST(Declaration) = { KW_FN, KW_STRUCT, KW_INT, KW_FLOAT, KW_BOOL, KW_VOID, IDENTIFIER }
-FIRST(FunctionDecl) = { KW_FN }
-FIRST(StructDecl) = { KW_STRUCT }
-FIRST(VarDecl) = { KW_INT, KW_FLOAT, KW_BOOL, KW_VOID, IDENTIFIER, KW_STRUCT }
-FIRST(Statement) = { LBRACE, KW_IF, KW_WHILE, KW_FOR, KW_RETURN, IDENTIFIER, 
-                     INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL, KW_TRUE, KW_FALSE, 
-                     LPAREN, OPERATOR_INCREMENT, OPERATOR_DECREMENT, OPERATOR_NOT, 
-                     OPERATOR_MINUS, KW_INT, KW_FLOAT, KW_BOOL, KW_VOID, KW_STRUCT, SEMICOLON }
-FIRST(BlockStmt) = { LBRACE }
-FIRST(IfStmt) = { KW_IF }
-FIRST(WhileStmt) = { KW_WHILE }
-FIRST(ForStmt) = { KW_FOR }
-FIRST(ReturnStmt) = { KW_RETURN }
-FIRST(ExprStmt) = { IDENTIFIER, INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL, 
-                    KW_TRUE, KW_FALSE, LPAREN, OPERATOR_INCREMENT, OPERATOR_DECREMENT, 
-                    OPERATOR_NOT, OPERATOR_MINUS }
-FIRST(EmptyStmt) = { SEMICOLON }
-FIRST(Expression) = { IDENTIFIER, INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL, 
-                      KW_TRUE, KW_FALSE, LPAREN, OPERATOR_INCREMENT, OPERATOR_DECREMENT, 
-                      OPERATOR_NOT, OPERATOR_MINUS }
+FIRST(Program) = { "fn", "struct", "int", "float", "bool", "void", identifier, ε }
+FIRST(Declaration) = { "fn", "struct", "int", "float", "bool", "void", identifier }
+FIRST(FunctionDecl) = { "fn" }
+FIRST(StructDecl) = { "struct" }
+FIRST(VarDecl) = { "int", "float", "bool", "void", identifier, "struct" }
+FIRST(Statement) = { "{", "if", "while", "for", "return", identifier, 
+                     int_literal, float_literal, string_literal, "true", "false", 
+                     "(", "++", "--", "!", "-", "int", "float", "bool", "void", "struct", ";" }
+FIRST(BlockStmt) = { "{" }
+FIRST(IfStmt) = { "if" }
+FIRST(WhileStmt) = { "while" }
+FIRST(ForStmt) = { "for" }
+FIRST(ReturnStmt) = { "return" }
+FIRST(ExprStmt) = { identifier, int_literal, float_literal, string_literal, 
+                    "true", "false", "(", "++", "--", "!", "-" }
+FIRST(EmptyStmt) = { ";" }
+FIRST(Expression) = { identifier, int_literal, float_literal, string_literal, 
+                      "true", "false", "(", "++", "--", "!", "-" }
 ```
 
 ### Множества FOLLOW
 ```
 FOLLOW(Program) = { EOF }
-FOLLOW(Declaration) = { KW_FN, KW_STRUCT, KW_INT, KW_FLOAT, KW_BOOL, KW_VOID, IDENTIFIER, EOF }
-FOLLOW(Statement) = { SEMICOLON, RBRACE, KW_ELSE, EOF }
-FOLLOW(BlockStmt) = { SEMICOLON, RBRACE, KW_ELSE, EOF }
-FOLLOW(IfStmt) = { SEMICOLON, RBRACE, KW_ELSE, EOF }
-FOLLOW(WhileStmt) = { SEMICOLON, RBRACE, KW_ELSE, EOF }
-FOLLOW(ForStmt) = { SEMICOLON, RBRACE, KW_ELSE, EOF }
-FOLLOW(ReturnStmt) = { SEMICOLON, RBRACE, KW_ELSE, EOF }
-FOLLOW(ExprStmt) = { SEMICOLON, RBRACE, KW_ELSE, EOF }
-FOLLOW(EmptyStmt) = { SEMICOLON, RBRACE, KW_ELSE, EOF }
-FOLLOW(Expression) = { SEMICOLON, RPAREN, COMMA, RBRACE, RBRACKET, DOT,
-                       OPERATOR_ASSIGN, OPERATOR_ADD_ASSIGN, OPERATOR_SUB_ASSIGN, 
-                       OPERATOR_MUL_ASSIGN, OPERATOR_DIV_ASSIGN, OPERATOR_MOD_ASSIGN,
-                       OPERATOR_OR, OPERATOR_AND, OPERATOR_EQ, OPERATOR_NEQ,
-                       OPERATOR_LT, OPERATOR_GT, OPERATOR_LTE, OPERATOR_GTE,
-                       OPERATOR_PLUS, OPERATOR_MINUS, OPERATOR_MUL, OPERATOR_DIV, 
-                       OPERATOR_MOD, KW_ELSE }
+FOLLOW(Declaration) = { "fn", "struct", "int", "float", "bool", "void", identifier, EOF }
+FOLLOW(Statement) = { ";", "}", "else", EOF }
+FOLLOW(BlockStmt) = { ";", "}", "else", EOF }
+FOLLOW(IfStmt) = { ";", "}", "else", EOF }
+FOLLOW(WhileStmt) = { ";", "}", "else", EOF }
+FOLLOW(ForStmt) = { ";", "}", "else", EOF }
+FOLLOW(ReturnStmt) = { ";", "}", "else", EOF }
+FOLLOW(ExprStmt) = { ";", "}", "else", EOF }
+FOLLOW(EmptyStmt) = { ";", "}", "else", EOF }
+FOLLOW(Expression) = { ";", ")", ",", "}", "]", ".",
+                       "=", "+=", "-=", "*=", "/=", "%=",
+                       "||", "&&", "==", "!=", "<", ">", "<=", ">=",
+                       "+", "-", "*", "/", "%", "else" }
 ```
