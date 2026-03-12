@@ -56,7 +56,7 @@ make coverage
 
 | Опция | Описание |
 |-------|----------|
-| `--format txt/dot/json` | Формат вывода AST (по умолчанию - txt) |
+| `--format txt|dot|json` | Формат вывода AST (по умолчанию - txt) |
 | `--verbose` | Подробный вывод процесса разбора |
 | `--max-errors <число>` | Максимальное количество ошибок (по умолчанию - 100) |
 
@@ -199,20 +199,16 @@ compiler_project/
     │   │   ├── bad_expression.src
     │   │   ├── expected
     │   │   │   ├── bad_expression.txt
-    │   │   │   ├── double_semicolon.txt
     │   │   │   ├── invalid_var_name.txt
     │   │   │   ├── mismatched_parens.txt
     │   │   │   ├── missing_brace.txt
     │   │   │   ├── missing_function_name.txt
-    │   │   │   ├── missing_return_type.txt
-    │   │   │   ├── missing_semicolon.txt
-    │   │   │   └── unclosed_comment.txt
+    │   │   │   └── missing_semicolon.txt
     │   │   ├── invalid_var_name.src
     │   │   ├── mismatched_parens.src
     │   │   ├── missing_brace.src
     │   │   ├── missing_function_name.src
-    │   │   ├── missing_semicolon.src
-    │   │   └── unclosed_comment.src
+    │   │   └── missing_semicolon.src
     │   └── valid
     │       ├── arithmetic.src
     │       ├── comparison.src
