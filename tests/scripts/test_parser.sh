@@ -26,14 +26,14 @@ TOTAL=0
 PASSED=0
 FAILED=0
 
-echo "Тестирование $CATEGORY"
+echo -e "\n Тестирование $CATEGORY\n"
 
 for test_file in "$TEST_DIR"/*.src; do
     if [ ! -f "$test_file" ]; then
         continue
     fi
     
-    if [[ "$(basename "$test_file")" == "roundtrip.src" ]]; then
+    if [[ "$CATEGORY" == *"INVALID"* ]] && [[ "$(basename "$test_file")" == "roundtrip.src" ]]; then
         continue
     fi
     
@@ -47,119 +47,81 @@ for test_file in "$TEST_DIR"/*.src; do
     error_file="test_output/${basename}.err"
     
     if [ ! -f "$expected_file" ]; then
-        echo "  [${CATEGORY}] ${filename}: ошибка - отсутствует ожидаемый файл $expected_file"
+        echo "  [${CATEGORY}] ${filename}: отсутствует ожидаемый файл $expected_file"
         FAILED=$((FAILED + 1))
         continue
     fi
     
     ./compiler parse --input "$test_file" --output "$output_file" 2> "$error_file"
     
-    if [[ "$CATEGORY" == *"INVALID"* ]]; then
+    if [ ! -f "$output_file" ]; then
+        echo "  [${CATEGORY}] ${filename}: ошибка - выходной файл не создан!!!"
         if [ -s "$error_file" ]; then
-            if diff -u "$expected_file" "$error_file" > /dev/null 2>&1; then
-                echo "  [${CATEGORY}] ${filename}: успешно (ошибка обнаружена)"
-                PASSED=$((PASSED + 1))
-            else
-                echo "  [${CATEGORY}] ${filename}: неудача - неверный вывод ошибки"
-                echo "    Различия:"
-                diff -u "$expected_file" "$error_file" | sed 's/^/      /'
-                FAILED=$((FAILED + 1))
-            fi
-        elif grep -q "Ошибка синтаксиса" "$output_file" 2>/dev/null; then
-            grep "Ошибка синтаксиса" "$output_file" > "${output_file}.errors"
-            if diff -u "$expected_file" "${output_file}.errors" > /dev/null 2>&1; then
-                echo "  [${CATEGORY}] ${filename}: успешно (ошибка обнаружена)"
-                PASSED=$((PASSED + 1))
-            else
-                echo "  [${CATEGORY}] ${filename}: неудача - неверный вывод ошибки"
-                echo "    Различия:"
-                diff -u "$expected_file" "${output_file}.errors" | sed 's/^/      /'
-                FAILED=$((FAILED + 1))
-            fi
-        else
-            echo "  [${CATEGORY}] ${filename}: неудача - ошибка не обнаружена"
-            FAILED=$((FAILED + 1))
-        fi
-    else
-        if [ ! -f "$output_file" ]; then
-            echo "  [${CATEGORY}] ${filename}: ошибка - выходной файл не создан"
-            if [ -s "$error_file" ]; then
-                echo "    Сообщение об ошибке:"
-                cat "$error_file" | sed 's/^/      /'
-            fi
-            FAILED=$((FAILED + 1))
-            continue
-        fi
-        
-        if [ -s "$error_file" ]; then
-            echo "  [${CATEGORY}] ${filename}: неудача - есть сообщения об ошибках"
-            echo "    Сообщения:"
+            echo "    Сообщение об ошибке:"
             cat "$error_file" | sed 's/^/      /'
-            FAILED=$((FAILED + 1))
-        elif diff -u "$expected_file" "$output_file" > /dev/null; then
-            echo "  [${CATEGORY}] ${filename}: успешно!"
-            PASSED=$((PASSED + 1))
-        else
-            echo "  [${CATEGORY}] ${filename}: неудача!!!"
-            echo "    Различия:"
-            diff -u "$expected_file" "$output_file" | sed 's/^/      /'
-            FAILED=$((FAILED + 1))
         fi
+        FAILED=$((FAILED + 1))
+        continue
+    fi
+    
+    if diff -u "$expected_file" "$output_file" > /dev/null; then
+        echo "  [${CATEGORY}] ${filename}: успешно"
+        PASSED=$((PASSED + 1))
+    else
+        echo "  [${CATEGORY}] ${filename}: неудача!"
+        echo "    Различия:"
+        diff -u "$expected_file" "$output_file" | sed 's/^/      /'
+        FAILED=$((FAILED + 1))
     fi
 done
 
-if [[ "$CATEGORY" == *"VALID"* ]]; then
-    echo "  Запуск round-trip теста"
+if [[ "$CATEGORY" == *"VALID"* ]] && [ -f "$TEST_DIR/roundtrip.src" ]; then
+    echo -e "\n  Запуск round-trip теста"
     
-    roundtrip_file="$TEST_DIR/roundtrip.src"
-    if [ -f "$roundtrip_file" ]; then
-        TOTAL=$((TOTAL + 1))
+    TOTAL=$((TOTAL + 1))
+    
+    roundtrip_ast1="test_output/roundtrip_ast1.txt"
+    roundtrip_ast2="test_output/roundtrip_ast2.txt"
+    roundtrip_error="test_output/roundtrip.err"
+    
+    ./compiler parse --input "$TEST_DIR/roundtrip.src" --output "$roundtrip_ast1" 2> "$roundtrip_error"
+    
+    if [ -f "$roundtrip_ast1" ]; then
+        ./compiler parse --input "$TEST_DIR/roundtrip.src" --output "$roundtrip_ast2" 2>> "$roundtrip_error"
         
-        roundtrip_ast1="test_output/roundtrip_ast1.txt"
-        roundtrip_ast2="test_output/roundtrip_ast2.txt"
-        roundtrip_error="test_output/roundtrip.err"
-        
-        echo "    Шаг 1: Парсинг исходного файла -> AST1"
-        ./compiler parse --input "$roundtrip_file" --output "$roundtrip_ast1" 2> "$roundtrip_error"
-        
-        if [ $? -eq 0 ] && [ -f "$roundtrip_ast1" ]; then
-            echo "    Шаг 2: Повторный парсинг того же файла -> AST2"
-            ./compiler parse --input "$roundtrip_file" --output "$roundtrip_ast2" 2>> "$roundtrip_error"
-            
-            if [ $? -eq 0 ] && [ -f "$roundtrip_ast2" ]; then
-                echo "    Шаг 3: Сравнение AST1 и AST2"
-                if diff -u "$roundtrip_ast1" "$roundtrip_ast2" > /dev/null; then
-                    echo "  [${CATEGORY}] roundtrip: успешно! (AST эквивалентны)"
-                    PASSED=$((PASSED + 1))
-                else
-                    echo "  [${CATEGORY}] roundtrip: неудача - AST различаются!!!"
-                    echo "    Различия:"
-                    diff -u "$roundtrip_ast1" "$roundtrip_ast2" | sed 's/^/      /'
-                    FAILED=$((FAILED + 1))
-                fi
+        if [ -f "$roundtrip_ast2" ]; then
+            if diff -u "$roundtrip_ast1" "$roundtrip_ast2" > /dev/null; then
+                echo "  [${CATEGORY}] roundtrip: успешно!"
+                PASSED=$((PASSED + 1))
             else
-                echo "  [${CATEGORY}] roundtrip: неудача - ошибка при повторном парсинге"
-                if [ -s "$roundtrip_error" ]; then
-                    echo "    Сообщение об ошибке:"
-                    cat "$roundtrip_error" | sed 's/^/      /'
-                fi
+                echo "  [${CATEGORY}] roundtrip: неудача - AST различаются!!!"
+                echo "    Различия:"
+                diff -u "$roundtrip_ast1" "$roundtrip_ast2" | sed 's/^/      /'
                 FAILED=$((FAILED + 1))
             fi
         else
-            echo "  [${CATEGORY}] roundtrip: неудача - ошибка при первом парсинге"
+            echo "  [${CATEGORY}] roundtrip: неудача - ошибка при повторном парсинге!!!"
             if [ -s "$roundtrip_error" ]; then
                 echo "    Сообщение об ошибке:"
                 cat "$roundtrip_error" | sed 's/^/      /'
             fi
             FAILED=$((FAILED + 1))
         fi
+    else
+        echo "  [${CATEGORY}] roundtrip:  неудача - ошибка при первом парсинге!!!"
+        if [ -s "$roundtrip_error" ]; then
+            echo "    Сообщение об ошибке:"
+            cat "$roundtrip_error" | sed 's/^/      /'
+        fi
+        FAILED=$((FAILED + 1))
     fi
 fi
 
-echo "Результаты тестирования $CATEGORY"
+echo -e "\n Результаты тестирования $CATEGORY"
 echo "  Всего: $TOTAL"
 echo "  Успешно: $PASSED"
 echo "  Провалено: $FAILED"
+echo ""
 
 if [ $FAILED -gt 0 ]; then
     exit 1

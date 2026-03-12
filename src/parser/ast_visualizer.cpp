@@ -14,8 +14,8 @@ std::string DOTPrinter::generateNodeId() {
     return "node" + std::to_string(nodeCounter++);
 }
 
-void DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
-    if (!node) return;
+std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
+    if (!node) return "";
     
     std::string nodeId = generateNodeId();
     
@@ -27,81 +27,91 @@ void DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
         color = "lightgreen";
         label = "Program";
         shape = "box";
-    } else if (dynamic_cast<const FunctionDeclNode*>(node)) {
+    } else if (auto func = dynamic_cast<const FunctionDeclNode*>(node)) {
         color = "lightcoral";
-        auto func = dynamic_cast<const FunctionDeclNode*>(node);
         label = "Function: " + func->getName() + "\\n-> " + func->getReturnType();
         shape = "box";
-    } else if (dynamic_cast<const StructDeclNode*>(node)) {
+    } else if (auto str = dynamic_cast<const StructDeclNode*>(node)) {
         color = "lightgoldenrodyellow";
-        auto str = dynamic_cast<const StructDeclNode*>(node);
         label = "Struct: " + str->getName();
         shape = "box";
-    } else if (dynamic_cast<const VarDeclStmtNode*>(node)) {
+    } else if (auto var = dynamic_cast<const VarDeclStmtNode*>(node)) {
         color = "lightskyblue";
-        auto var = dynamic_cast<const VarDeclStmtNode*>(node);
         label = "VarDecl: " + var->getType() + " " + var->getName();
         if (var->hasInitializer()) {
             label += " = ...";
         }
         shape = "box";
-    } else if (dynamic_cast<const BinaryExprNode*>(node)) {
+    } else if (auto bin = dynamic_cast<const BinaryExprNode*>(node)) {
         color = "thistle";
-        auto bin = dynamic_cast<const BinaryExprNode*>(node);
-        label = "Binary: " + std::string(token_type_to_string(bin->getOperator()));
+        label = std::string(token_type_to_string(bin->getOperator()));
         shape = "ellipse";
-    } else if (dynamic_cast<const UnaryExprNode*>(node)) {
+    } else if (auto un = dynamic_cast<const UnaryExprNode*>(node)) {
         color = "thistle";
-        auto un = dynamic_cast<const UnaryExprNode*>(node);
-        label = "Unary: " + std::string(token_type_to_string(un->getOperator()));
+        label = std::string(token_type_to_string(un->getOperator()));
         shape = "ellipse";
-    } else if (dynamic_cast<const LiteralExprNode*>(node)) {
+    } else if (auto lit = dynamic_cast<const LiteralExprNode*>(node)) {
         color = "wheat";
-        auto lit = dynamic_cast<const LiteralExprNode*>(node);
-        label = "Literal: " + lit->toString();
+        if (auto intVal = lit->getValue<int>()) {
+            label = "int " + std::to_string(*intVal);
+        } else if (auto floatVal = lit->getValue<double>()) {
+            std::ostringstream oss;
+            oss << std::fixed << std::setprecision(6) << *floatVal;
+            label = "float " + oss.str();
+        } else if (auto strVal = lit->getValue<std::string>()) {
+            label = "string \\\"" + *strVal + "\\\"";
+        } else if (auto boolVal = lit->getValue<bool>()) {
+            label = "bool " + std::string(*boolVal ? "true" : "false");
+        } else {
+            label = "Literal";
+        }
         shape = "ellipse";
-    } else if (dynamic_cast<const IdentifierExprNode*>(node)) {
+    } else if (auto id = dynamic_cast<const IdentifierExprNode*>(node)) {
         color = "wheat";
-        auto id = dynamic_cast<const IdentifierExprNode*>(node);
-        label = "Identifier: " + id->getName();
+        label = id->getName();
         shape = "ellipse";
-    } else if (dynamic_cast<const CallExprNode*>(node)) {
+    } else if (auto call = dynamic_cast<const CallExprNode*>(node)) {
         color = "thistle";
         label = "Call";
         shape = "ellipse";
-    } else if (dynamic_cast<const AssignmentExprNode*>(node)) {
+        (void)call;
+    } else if (auto assign = dynamic_cast<const AssignmentExprNode*>(node)) {
         color = "thistle";
-        auto assign = dynamic_cast<const AssignmentExprNode*>(node);
-        label = "Assignment: " + std::string(token_type_to_string(assign->getOperator()));
+        label = std::string(token_type_to_string(assign->getOperator()));
         shape = "ellipse";
-    } else if (dynamic_cast<const IfStmtNode*>(node)) {
+    } else if (auto ifStmt = dynamic_cast<const IfStmtNode*>(node)) {
         color = "lightpink";
         label = "If";
         shape = "box";
-    } else if (dynamic_cast<const WhileStmtNode*>(node)) {
+        (void)ifStmt;
+    } else if (auto whileStmt = dynamic_cast<const WhileStmtNode*>(node)) {
         color = "lightpink";
         label = "While";
         shape = "box";
-    } else if (dynamic_cast<const ForStmtNode*>(node)) {
+        (void)whileStmt;
+    } else if (auto forStmt = dynamic_cast<const ForStmtNode*>(node)) {
         color = "lightpink";
         label = "For";
         shape = "box";
-    } else if (dynamic_cast<const ReturnStmtNode*>(node)) {
+        (void)forStmt;
+    } else if (auto returnStmt = dynamic_cast<const ReturnStmtNode*>(node)) {
         color = "lightpink";
         label = "Return";
         shape = "box";
-    } else if (dynamic_cast<const BlockStmtNode*>(node)) {
+        (void)returnStmt;
+    } else if (auto block = dynamic_cast<const BlockStmtNode*>(node)) {
         color = "lightgray";
         label = "Block";
         shape = "box";
-    } else if (dynamic_cast<const ExprStmtNode*>(node)) {
+        (void)block;
+    } else if (auto exprStmt = dynamic_cast<const ExprStmtNode*>(node)) {
         color = "lightgray";
         label = "ExprStmt";
         shape = "box";
-    } else if (dynamic_cast<const ParamNode*>(node)) {
+        (void)exprStmt;
+    } else if (auto param = dynamic_cast<const ParamNode*>(node)) {
         color = "lightsalmon";
-        auto param = dynamic_cast<const ParamNode*>(node);
-        label = "Param: " + param->getType() + " " + param->getName();
+        label = param->getType() + " " + param->getName();
         shape = "box";
     } else {
         label = "Node";
@@ -113,141 +123,119 @@ void DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
     
     if (auto program = dynamic_cast<const ProgramNode*>(node)) {
         for (const auto& decl : program->getDeclarations()) {
-            std::string childId = generateNodeId();
-            visitNode(decl.get(), out);
+            std::string childId = visitNode(decl.get(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"decl\"];\n";
         }
     } else if (auto func = dynamic_cast<const FunctionDeclNode*>(node)) {
         for (const auto& param : func->getParameters()) {
-            std::string childId = generateNodeId();
-            visitNode(param.get(), out);
+            std::string childId = visitNode(param.get(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"param\"];\n";
         }
         if (func->getBody()) {
-            std::string childId = generateNodeId();
-            visitNode(func->getBody(), out);
+            std::string childId = visitNode(func->getBody(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"body\"];\n";
         }
     } else if (auto str = dynamic_cast<const StructDeclNode*>(node)) {
         for (const auto& field : str->getFields()) {
-            std::string childId = generateNodeId();
-            visitNode(field.get(), out);
+            std::string childId = visitNode(field.get(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"field\"];\n";
-        }
-    } else if (auto bin = dynamic_cast<const BinaryExprNode*>(node)) {
-        if (bin->getLeft()) {
-            std::string childId = generateNodeId();
-            visitNode(bin->getLeft(), out);
-            out << "  " << nodeId << " -> " << childId << " [label=\"left\"];\n";
-        }
-        if (bin->getRight()) {
-            std::string childId = generateNodeId();
-            visitNode(bin->getRight(), out);
-            out << "  " << nodeId << " -> " << childId << " [label=\"right\"];\n";
-        }
-    } else if (auto un = dynamic_cast<const UnaryExprNode*>(node)) {
-        if (un->getOperand()) {
-            std::string childId = generateNodeId();
-            visitNode(un->getOperand(), out);
-            out << "  " << nodeId << " -> " << childId << " [label=\"operand\"];\n";
-        }
-    } else if (auto call = dynamic_cast<const CallExprNode*>(node)) {
-        if (call->getCallee()) {
-            std::string childId = generateNodeId();
-            visitNode(call->getCallee(), out);
-            out << "  " << nodeId << " -> " << childId << " [label=\"callee\"];\n";
-        }
-        int argNum = 0;
-        for (const auto& arg : call->getArguments()) {
-            std::string childId = generateNodeId();
-            visitNode(arg.get(), out);
-            out << "  " << nodeId << " -> " << childId << " [label=\"arg" << argNum++ << "\"];\n";
-        }
-    } else if (auto assign = dynamic_cast<const AssignmentExprNode*>(node)) {
-        if (assign->getTarget()) {
-            std::string childId = generateNodeId();
-            visitNode(assign->getTarget(), out);
-            out << "  " << nodeId << " -> " << childId << " [label=\"target\"];\n";
-        }
-        if (assign->getValue()) {
-            std::string childId = generateNodeId();
-            visitNode(assign->getValue(), out);
-            out << "  " << nodeId << " -> " << childId << " [label=\"value\"];\n";
         }
     } else if (auto block = dynamic_cast<const BlockStmtNode*>(node)) {
         int stmtNum = 0;
         for (const auto& stmt : block->getStatements()) {
-            std::string childId = generateNodeId();
-            visitNode(stmt.get(), out);
+            std::string childId = visitNode(stmt.get(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"stmt" << stmtNum++ << "\"];\n";
         }
     } else if (auto ifStmt = dynamic_cast<const IfStmtNode*>(node)) {
         if (ifStmt->getCondition()) {
-            std::string childId = generateNodeId();
-            visitNode(ifStmt->getCondition(), out);
+            std::string childId = visitNode(ifStmt->getCondition(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"condition\"];\n";
         }
         if (ifStmt->getThenBranch()) {
-            std::string childId = generateNodeId();
-            visitNode(ifStmt->getThenBranch(), out);
+            std::string childId = visitNode(ifStmt->getThenBranch(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"then\"];\n";
         }
         if (ifStmt->getElseBranch()) {
-            std::string childId = generateNodeId();
-            visitNode(ifStmt->getElseBranch(), out);
+            std::string childId = visitNode(ifStmt->getElseBranch(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"else\"];\n";
         }
     } else if (auto whileStmt = dynamic_cast<const WhileStmtNode*>(node)) {
         if (whileStmt->getCondition()) {
-            std::string childId = generateNodeId();
-            visitNode(whileStmt->getCondition(), out);
+            std::string childId = visitNode(whileStmt->getCondition(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"condition\"];\n";
         }
         if (whileStmt->getBody()) {
-            std::string childId = generateNodeId();
-            visitNode(whileStmt->getBody(), out);
+            std::string childId = visitNode(whileStmt->getBody(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"body\"];\n";
         }
     } else if (auto forStmt = dynamic_cast<const ForStmtNode*>(node)) {
         if (forStmt->getInit()) {
-            std::string childId = generateNodeId();
-            visitNode(forStmt->getInit(), out);
+            std::string childId = visitNode(forStmt->getInit(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"init\"];\n";
         }
         if (forStmt->getCondition()) {
-            std::string childId = generateNodeId();
-            visitNode(forStmt->getCondition(), out);
+            std::string childId = visitNode(forStmt->getCondition(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"condition\"];\n";
         }
         if (forStmt->getUpdate()) {
-            std::string childId = generateNodeId();
-            visitNode(forStmt->getUpdate(), out);
+            std::string childId = visitNode(forStmt->getUpdate(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"update\"];\n";
         }
         if (forStmt->getBody()) {
-            std::string childId = generateNodeId();
-            visitNode(forStmt->getBody(), out);
+            std::string childId = visitNode(forStmt->getBody(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"body\"];\n";
         }
     } else if (auto returnStmt = dynamic_cast<const ReturnStmtNode*>(node)) {
         if (returnStmt->getValue()) {
-            std::string childId = generateNodeId();
-            visitNode(returnStmt->getValue(), out);
+            std::string childId = visitNode(returnStmt->getValue(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"value\"];\n";
         }
     } else if (auto exprStmt = dynamic_cast<const ExprStmtNode*>(node)) {
         if (exprStmt->getExpression()) {
-            std::string childId = generateNodeId();
-            visitNode(exprStmt->getExpression(), out);
+            std::string childId = visitNode(exprStmt->getExpression(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"expr\"];\n";
         }
     } else if (auto varDecl = dynamic_cast<const VarDeclStmtNode*>(node)) {
         if (varDecl->hasInitializer()) {
-            std::string childId = generateNodeId();
-            visitNode(varDecl->getInitializer(), out);
+            std::string childId = visitNode(varDecl->getInitializer(), out);
             out << "  " << nodeId << " -> " << childId << " [label=\"init\"];\n";
         }
+    } else if (auto bin = dynamic_cast<const BinaryExprNode*>(node)) {
+        if (bin->getLeft()) {
+            std::string childId = visitNode(bin->getLeft(), out);
+            out << "  " << nodeId << " -> " << childId << " [label=\"left\"];\n";
+        }
+        if (bin->getRight()) {
+            std::string childId = visitNode(bin->getRight(), out);
+            out << "  " << nodeId << " -> " << childId << " [label=\"right\"];\n";
+        }
+    } else if (auto un = dynamic_cast<const UnaryExprNode*>(node)) {
+        if (un->getOperand()) {
+            std::string childId = visitNode(un->getOperand(), out);
+            out << "  " << nodeId << " -> " << childId << " [label=\"operand\"];\n";
+        }
+    } else if (auto call = dynamic_cast<const CallExprNode*>(node)) {
+        if (call->getCallee()) {
+            std::string childId = visitNode(call->getCallee(), out);
+            out << "  " << nodeId << " -> " << childId << " [label=\"callee\"];\n";
+        }
+        int argNum = 0;
+        for (const auto& arg : call->getArguments()) {
+            std::string childId = visitNode(arg.get(), out);
+            out << "  " << nodeId << " -> " << childId << " [label=\"arg" << argNum++ << "\"];\n";
+        }
+    } else if (auto assign = dynamic_cast<const AssignmentExprNode*>(node)) {
+        if (assign->getTarget()) {
+            std::string childId = visitNode(assign->getTarget(), out);
+            out << "  " << nodeId << " -> " << childId << " [label=\"target\"];\n";
+        }
+        if (assign->getValue()) {
+            std::string childId = visitNode(assign->getValue(), out);
+            out << "  " << nodeId << " -> " << childId << " [label=\"value\"];\n";
+        }
     }
+    
+    return nodeId;
 }
 
 std::string DOTPrinter::visualize(const ProgramNode* program) {
@@ -294,8 +282,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
     
     out << "{\n";
     
-    if (dynamic_cast<const ProgramNode*>(node)) {
-        auto prog = dynamic_cast<const ProgramNode*>(node);
+    if (auto prog = dynamic_cast<const ProgramNode*>(node)) {
         out << indentStr2 << "\"type\": \"Program\",\n";
         out << indentStr2 << "\"line\": " << prog->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << prog->getColumn() << ",\n";
@@ -306,9 +293,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
             out << "\n";
         }
         out << indentStr2 << "]\n";
-    }
-    else if (dynamic_cast<const FunctionDeclNode*>(node)) {
-        auto func = dynamic_cast<const FunctionDeclNode*>(node);
+    } else if (auto func = dynamic_cast<const FunctionDeclNode*>(node)) {
         out << indentStr2 << "\"type\": \"FunctionDecl\",\n";
         out << indentStr2 << "\"line\": " << func->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << func->getColumn() << ",\n";
@@ -324,17 +309,13 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"body\": ";
         visitNode(func->getBody(), out, indent + 2);
         out << "\n";
-    }
-    else if (dynamic_cast<const ParamNode*>(node)) {
-        auto param = dynamic_cast<const ParamNode*>(node);
+    } else if (auto param = dynamic_cast<const ParamNode*>(node)) {
         out << indentStr2 << "\"type\": \"Param\",\n";
         out << indentStr2 << "\"line\": " << param->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << param->getColumn() << ",\n";
         out << indentStr2 << "\"typeName\": \"" << escapeJSON(param->getType()) << "\",\n";
         out << indentStr2 << "\"name\": \"" << escapeJSON(param->getName()) << "\"\n";
-    }
-    else if (dynamic_cast<const BlockStmtNode*>(node)) {
-        auto block = dynamic_cast<const BlockStmtNode*>(node);
+    } else if (auto block = dynamic_cast<const BlockStmtNode*>(node)) {
         out << indentStr2 << "\"type\": \"Block\",\n";
         out << indentStr2 << "\"line\": " << block->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << block->getColumn() << ",\n";
@@ -345,9 +326,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
             out << "\n";
         }
         out << indentStr2 << "]\n";
-    }
-    else if (dynamic_cast<const VarDeclStmtNode*>(node)) {
-        auto var = dynamic_cast<const VarDeclStmtNode*>(node);
+    } else if (auto var = dynamic_cast<const VarDeclStmtNode*>(node)) {
         out << indentStr2 << "\"type\": \"VarDecl\",\n";
         out << indentStr2 << "\"line\": " << var->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << var->getColumn() << ",\n";
@@ -360,9 +339,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
             out << "null";
         }
         out << "\n";
-    }
-    else if (dynamic_cast<const ReturnStmtNode*>(node)) {
-        auto ret = dynamic_cast<const ReturnStmtNode*>(node);
+    } else if (auto ret = dynamic_cast<const ReturnStmtNode*>(node)) {
         out << indentStr2 << "\"type\": \"ReturnStmt\",\n";
         out << indentStr2 << "\"line\": " << ret->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << ret->getColumn() << ",\n";
@@ -373,9 +350,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
             out << "null";
         }
         out << "\n";
-    }
-    else if (dynamic_cast<const WhileStmtNode*>(node)) {
-        auto whileStmt = dynamic_cast<const WhileStmtNode*>(node);
+    } else if (auto whileStmt = dynamic_cast<const WhileStmtNode*>(node)) {
         out << indentStr2 << "\"type\": \"WhileStmt\",\n";
         out << indentStr2 << "\"line\": " << whileStmt->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << whileStmt->getColumn() << ",\n";
@@ -385,9 +360,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"body\": ";
         visitNode(whileStmt->getBody(), out, indent + 2);
         out << "\n";
-    }
-    else if (dynamic_cast<const ForStmtNode*>(node)) {
-        auto forStmt = dynamic_cast<const ForStmtNode*>(node);
+    } else if (auto forStmt = dynamic_cast<const ForStmtNode*>(node)) {
         out << indentStr2 << "\"type\": \"ForStmt\",\n";
         out << indentStr2 << "\"line\": " << forStmt->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << forStmt->getColumn() << ",\n";
@@ -415,9 +388,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"body\": ";
         visitNode(forStmt->getBody(), out, indent + 2);
         out << "\n";
-    }
-    else if (dynamic_cast<const IfStmtNode*>(node)) {
-        auto ifStmt = dynamic_cast<const IfStmtNode*>(node);
+    } else if (auto ifStmt = dynamic_cast<const IfStmtNode*>(node)) {
         out << indentStr2 << "\"type\": \"IfStmt\",\n";
         out << indentStr2 << "\"line\": " << ifStmt->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << ifStmt->getColumn() << ",\n";
@@ -434,18 +405,14 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
             out << "null";
         }
         out << "\n";
-    }
-    else if (dynamic_cast<const ExprStmtNode*>(node)) {
-        auto exprStmt = dynamic_cast<const ExprStmtNode*>(node);
+    } else if (auto exprStmt = dynamic_cast<const ExprStmtNode*>(node)) {
         out << indentStr2 << "\"type\": \"ExprStmt\",\n";
         out << indentStr2 << "\"line\": " << exprStmt->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << exprStmt->getColumn() << ",\n";
         out << indentStr2 << "\"expression\": ";
         visitNode(exprStmt->getExpression(), out, indent + 2);
         out << "\n";
-    }
-    else if (dynamic_cast<const BinaryExprNode*>(node)) {
-        auto bin = dynamic_cast<const BinaryExprNode*>(node);
+    } else if (auto bin = dynamic_cast<const BinaryExprNode*>(node)) {
         out << indentStr2 << "\"type\": \"Binary\",\n";
         out << indentStr2 << "\"line\": " << bin->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << bin->getColumn() << ",\n";
@@ -456,9 +423,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"right\": ";
         visitNode(bin->getRight(), out, indent + 2);
         out << "\n";
-    }
-    else if (dynamic_cast<const UnaryExprNode*>(node)) {
-        auto un = dynamic_cast<const UnaryExprNode*>(node);
+    } else if (auto un = dynamic_cast<const UnaryExprNode*>(node)) {
         out << indentStr2 << "\"type\": \"Unary\",\n";
         out << indentStr2 << "\"line\": " << un->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << un->getColumn() << ",\n";
@@ -466,9 +431,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"operand\": ";
         visitNode(un->getOperand(), out, indent + 2);
         out << "\n";
-    }
-    else if (dynamic_cast<const AssignmentExprNode*>(node)) {
-        auto assign = dynamic_cast<const AssignmentExprNode*>(node);
+    } else if (auto assign = dynamic_cast<const AssignmentExprNode*>(node)) {
         out << indentStr2 << "\"type\": \"Assignment\",\n";
         out << indentStr2 << "\"line\": " << assign->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << assign->getColumn() << ",\n";
@@ -479,9 +442,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"value\": ";
         visitNode(assign->getValue(), out, indent + 2);
         out << "\n";
-    }
-    else if (dynamic_cast<const CallExprNode*>(node)) {
-        auto call = dynamic_cast<const CallExprNode*>(node);
+    } else if (auto call = dynamic_cast<const CallExprNode*>(node)) {
         out << indentStr2 << "\"type\": \"Call\",\n";
         out << indentStr2 << "\"line\": " << call->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << call->getColumn() << ",\n";
@@ -495,16 +456,12 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
             out << "\n";
         }
         out << indentStr2 << "]\n";
-    }
-    else if (dynamic_cast<const IdentifierExprNode*>(node)) {
-        auto id = dynamic_cast<const IdentifierExprNode*>(node);
+    } else if (auto id = dynamic_cast<const IdentifierExprNode*>(node)) {
         out << indentStr2 << "\"type\": \"Identifier\",\n";
         out << indentStr2 << "\"line\": " << id->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << id->getColumn() << ",\n";
         out << indentStr2 << "\"name\": \"" << escapeJSON(id->getName()) << "\"\n";
-    }
-    else if (dynamic_cast<const LiteralExprNode*>(node)) {
-        auto lit = dynamic_cast<const LiteralExprNode*>(node);
+    } else if (auto lit = dynamic_cast<const LiteralExprNode*>(node)) {
         out << indentStr2 << "\"type\": \"Literal\",\n";
         out << indentStr2 << "\"line\": " << lit->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << lit->getColumn() << ",\n";
@@ -522,8 +479,7 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
             out << "null";
         }
         out << "\n";
-    }
-    else {
+    } else {
         out << indentStr2 << "\"type\": \"Node\",\n";
         out << indentStr2 << "\"line\": " << node->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << node->getColumn() << "\n";
@@ -541,7 +497,7 @@ std::string JSONPrinter::visualize(const ProgramNode* program) {
     return out.str();
 }
 
-// Генератор Кода
+// Генератор кода
 CodeGenerator::CodeGenerator() : indentLevel(0) {}
 
 void CodeGenerator::indent() {
@@ -691,7 +647,12 @@ void CodeGenerator::generateForStmt(const ForStmtNode* forStmt) {
     out << "for (";
     
     if (forStmt->hasInit()) {
-        generateStatement(forStmt->getInit());
+        if (auto exprStmt = dynamic_cast<const ExprStmtNode*>(forStmt->getInit())) {
+            generateExpression(exprStmt->getExpression());
+        } else {
+            generateStatement(forStmt->getInit());
+        }
+        out << "; ";
     } else {
         out << "; ";
     }

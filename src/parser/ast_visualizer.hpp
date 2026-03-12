@@ -29,7 +29,7 @@ class DOTPrinter : public ASTVisualizer {
 private:
     int nodeCounter;
     std::string generateNodeId();
-    void visitNode(const ASTNode* node, std::ostream& out);
+    std::string visitNode(const ASTNode* node, std::ostream& out);
     
 public:
     DOTPrinter() : nodeCounter(0) {}
@@ -46,7 +46,6 @@ public:
     std::string visualize(const ProgramNode* program) override;
 };
 
-// Генератор кода из AST
 class CodeGenerator {
 private:
     std::ostringstream out;

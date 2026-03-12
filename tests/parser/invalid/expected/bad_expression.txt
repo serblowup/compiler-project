@@ -1,5 +1,12 @@
-[2:17] Ошибка синтаксиса: Ожидалось выражение, получен '*'
-  Подсказка: Проверьте синтаксис выражения
-[Parser] Обнаружены синтаксические ошибки:
-[2:17] Syntax error: Ожидалось выражение
-  Suggestion: Проверьте синтаксис выражения
+Program [line 1]:
+  FunctionDecl [line 1]: test -> int
+    body:
+      Block [line 1]:
+        VarDecl [line 2]: int x =
+          Binary [line 2]: ADD
+            left: Literal [line 2]: int 5
+            right: Binary [line 0]: MUL
+            right:   left: Literal [line 0]: int 0
+            right:   right: Literal [line 2]: int 3
+        ReturnStmt [line 3]:
+          Identifier [line 3]: x

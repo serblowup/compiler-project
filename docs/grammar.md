@@ -8,26 +8,54 @@
 
 ## Терминалы
 ```
-Ключевые слова:
+keyword:
   "if" | "else" | "while" | "for" | "int" | "float" | "bool" | "return"
   | "true" | "false" | "void" | "struct" | "fn"
 
 Идентификаторы и литералы:
-  identifier   : буква {буква|цифра|"_"}
-  int_literal  : цифра {цифра}
-  float_literal: цифра {цифра} "." цифра {цифра}
-  string_literal: '"' {символ-'"'} '"'
+  identifier        : letter, { letter | digit | "_" }
+  integer_literal   : digit, { digit }
+  float_literal     : digit, { digit }, ".", digit, { digit }
+  string_literal    : '"', { character - '"' }, '"'
+  boolean_literal   : "true" | "false"
 
-Операторы:
-  "="  | "+=" | "-=" | "*=" | "/=" | "%="  (присваивания)
-  "+"  | "-"  | "*"  | "/"  | "%"          (арифметические)
-  "==" | "!=" | "<"  | ">"  | "<=" | ">="  (отношения)
-  "&&" | "||" | "!"                        (логические)
-  "++" | "--"                              (инкремент/декремент)
-  "->" | "."                               (возвращаемый тип функции, доступ к полю)
+Арифметические операторы:
+  operator_add = "+"
+  operator_sub = "-"
+  operator_mul = "*"
+  operator_div = "/"
+  operator_mod = "%"
+
+Операторы отношения:
+  operator_eq  = "=="
+  operator_neq = "!="
+  operator_lt  = "<"
+  operator_gt  = ">"
+  operator_lte = "<="
+  operator_gte = ">="
+
+Логические операторы:
+  operator_and = "&&"
+  operator_or  = "||"
+  operator_not = "!"
+
+Операторы присваивания:
+  assign      = "="
+  assign_add  = "+="
+  assign_sub  = "-="
+  assign_mul  = "*="
+  assign_div  = "/="
+  assign_mod  = "%="
+
+Инкремент/Декремент:
+  increment = "++"
+  decrement = "--"
+
+Возвращаемый тип функции (стрелка):
+  arrow = "->"
 
 Разделители:
-  ";" | "," | ":" | "(" | ")" | "{" | "}" | "[" | "]"
+  delimiter = ";" | "," | "." | ":" | "(" | ")" | "{" | "}" | "[" | "]"
 
 EOF : конец файла
 ```
@@ -36,7 +64,7 @@ EOF : конец файла
 | Уровень | Категория операторов | Операторы | Ассоциативность |
 |---------|----------------------|-----------|-----------------|
 | 1 | Первичные выражения | литералы, идентификаторы, `(expr)` | - |
-| 2 | Постфиксные | `()` (вызов), `.` (доступ к полю), `++` `--` | Левая |
+| 2 | Постфиксные | `()`, `.`, `++` `--` | Левая |
 | 3 | Унарные (префиксные) | `-` `!` `++` `--` | Правая |
 | 4 | Мультипликативные | `*` `/` `%` | Левая |
 | 5 | Аддитивные | `+` `-` | Левая |
@@ -61,7 +89,7 @@ Declaration ::= FunctionDecl | StructDecl | VarDecl
 
 FunctionDecl ::= "fn" identifier "(" ParameterList ")" FunctionReturn Block
 
-FunctionReturn ::= "->" Type | ε
+FunctionReturn ::= arrow Type | ε
 
 ParameterList ::= Parameter ParametersRest | ε
 
@@ -77,7 +105,7 @@ Field ::= Type identifier ";"
 
 VarDecl ::= Type identifier VarInitializer ";"
 
-VarInitializer ::= "=" Expression | ε
+VarInitializer ::= assign Expression | ε
 ```
 
 ### Типы
@@ -124,43 +152,43 @@ AssignmentExpr ::= LogicalOrExpr AssignmentRest
 
 AssignmentRest ::= AssignmentOperator AssignmentExpr | ε
 
-AssignmentOperator ::= "=" | "+=" | "-=" | "*=" | "/=" | "%="
+AssignmentOperator ::= assign | assign_add | assign_sub | assign_mul | assign_div | assign_mod
 
 LogicalOrExpr ::= LogicalAndExpr LogicalOrRest
 
-LogicalOrRest ::= "||" LogicalAndExpr LogicalOrRest | ε
+LogicalOrRest ::= operator_or LogicalAndExpr LogicalOrRest | ε
 
 LogicalAndExpr ::= EqualityExpr LogicalAndRest
 
-LogicalAndRest ::= "&&" EqualityExpr LogicalAndRest | ε
+LogicalAndRest ::= operator_and EqualityExpr LogicalAndRest | ε
 
 EqualityExpr ::= RelationalExpr EqualityRest
 
 EqualityRest ::= EqualityOperator RelationalExpr EqualityRest | ε
 
-EqualityOperator ::= "==" | "!="
+EqualityOperator ::= operator_eq | operator_neq
 
 RelationalExpr ::= AdditiveExpr RelationalRest
 
 RelationalRest ::= RelationalOperator AdditiveExpr RelationalRest | ε
 
-RelationalOperator ::= "<" | ">" | "<=" | ">="
+RelationalOperator ::= operator_lt | operator_gt | operator_lte | operator_gte
 
 AdditiveExpr ::= MultiplicativeExpr AdditiveRest
 
 AdditiveRest ::= AdditiveOperator MultiplicativeExpr AdditiveRest | ε
 
-AdditiveOperator ::= "+" | "-"
+AdditiveOperator ::= operator_add | operator_sub
 
 MultiplicativeExpr ::= UnaryExpr MultiplicativeRest
 
 MultiplicativeRest ::= MultiplicativeOperator UnaryExpr MultiplicativeRest | ε
 
-MultiplicativeOperator ::= "*" | "/" | "%"
+MultiplicativeOperator ::= operator_mul | operator_div | operator_mod
 
 UnaryExpr ::= UnaryOperator UnaryExpr | PostfixExpr
 
-UnaryOperator ::= "-" | "!" | "++" | "--"
+UnaryOperator ::= operator_sub | operator_not | increment | decrement
 
 PostfixExpr ::= PrimaryExpr PostfixRest
 
@@ -172,13 +200,13 @@ CallSuffix ::= "(" ArgumentList ")"
 
 DotSuffix ::= "." identifier
 
-IncrementSuffix ::= "++"
+IncrementSuffix ::= increment
 
-DecrementSuffix ::= "--"
+DecrementSuffix ::= decrement
 
 PrimaryExpr ::= Literal | identifier | "(" Expression ")"
 
-Literal ::= int_literal | float_literal | string_literal | "true" | "false"
+Literal ::= integer_literal | float_literal | string_literal | boolean_literal
 
 ArgumentList ::= Expression ArgumentRest | ε
 
@@ -195,18 +223,19 @@ FIRST(FunctionDecl) = { "fn" }
 FIRST(StructDecl) = { "struct" }
 FIRST(VarDecl) = { "int", "float", "bool", "void", identifier, "struct" }
 FIRST(Statement) = { "{", "if", "while", "for", "return", identifier, 
-                     int_literal, float_literal, string_literal, "true", "false", 
-                     "(", "++", "--", "!", "-", "int", "float", "bool", "void", "struct", ";" }
+                     integer_literal, float_literal, string_literal, boolean_literal, 
+                     "(", increment, decrement, operator_not, operator_sub, 
+                     "int", "float", "bool", "void", "struct", ";" }
 FIRST(BlockStmt) = { "{" }
 FIRST(IfStmt) = { "if" }
 FIRST(WhileStmt) = { "while" }
 FIRST(ForStmt) = { "for" }
 FIRST(ReturnStmt) = { "return" }
-FIRST(ExprStmt) = { identifier, int_literal, float_literal, string_literal, 
-                    "true", "false", "(", "++", "--", "!", "-" }
+FIRST(ExprStmt) = { identifier, integer_literal, float_literal, string_literal, 
+                    boolean_literal, "(", increment, decrement, operator_not, operator_sub }
 FIRST(EmptyStmt) = { ";" }
-FIRST(Expression) = { identifier, int_literal, float_literal, string_literal, 
-                      "true", "false", "(", "++", "--", "!", "-" }
+FIRST(Expression) = { identifier, integer_literal, float_literal, string_literal, 
+                      boolean_literal, "(", increment, decrement, operator_not, operator_sub }
 ```
 
 ### Множества FOLLOW
@@ -222,7 +251,9 @@ FOLLOW(ReturnStmt) = { ";", "}", "else", EOF }
 FOLLOW(ExprStmt) = { ";", "}", "else", EOF }
 FOLLOW(EmptyStmt) = { ";", "}", "else", EOF }
 FOLLOW(Expression) = { ";", ")", ",", "}", "]", ".",
-                       "=", "+=", "-=", "*=", "/=", "%=",
-                       "||", "&&", "==", "!=", "<", ">", "<=", ">=",
-                       "+", "-", "*", "/", "%", "else" }
+                       assign, assign_add, assign_sub, assign_mul, assign_div, assign_mod,
+                       operator_or, operator_and, operator_eq, operator_neq,
+                       operator_lt, operator_gt, operator_lte, operator_gte,
+                       operator_add, operator_sub, operator_mul, operator_div, 
+                       operator_mod, "else" }
 ```

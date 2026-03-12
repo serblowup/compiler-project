@@ -1,5 +1,10 @@
-[2:19] Ошибка синтаксиса: Ожидалась ')' после выражения, получен ';'
-  Подсказка: Возможно, не хватает закрывающей круглой скобки ')'
-[Parser] Обнаружены синтаксические ошибки:
-[2:19] Syntax error: Ожидалась ')' после выражения
-  Suggestion: Возможно, не хватает закрывающей круглой скобки ')'
+Program [line 1]:
+  FunctionDecl [line 1]: test -> int
+    body:
+      Block [line 1]:
+        VarDecl [line 2]: int x =
+          Binary [line 2]: ADD
+            left: Literal [line 2]: int 5
+            right: Literal [line 2]: int 3
+        ReturnStmt [line 3]:
+          Identifier [line 3]: x

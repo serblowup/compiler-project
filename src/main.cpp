@@ -131,24 +131,6 @@ int run_parser(const std::string& input_file, const std::string& output_file,
         parser.setMaxErrorCount(max_errors);
         std::unique_ptr<ProgramNode> ast = parser.parse();
         
-        if (parser.hasErrors()) {
-            std::cerr << "[Parser] Обнаружены синтаксические ошибки:\n";
-            for (const auto& error : parser.getErrors()) {
-                std::cerr << error.toString() << "\n";
-            }
-            
-            if (verbose) {
-                std::cerr << "\n" << parser.getMetrics().toString() << "\n";
-            }
-            
-            return 1;
-        }
-        
-        if (verbose) {
-            std::cout << "[Parser] Парсер завершен. AST построен\n";
-            std::cout << parser.getMetrics().toString() << "\n";
-        }
-        
         std::unique_ptr<ASTVisualizer> visualizer;
         
         if (format == "dot") {
@@ -162,7 +144,23 @@ int run_parser(const std::string& input_file, const std::string& output_file,
         std::string ast_output = visualizer->visualize(ast.get());
         FileIO::write(ast_output, output_file);
         
-        std::cout << "Парсер завершен. AST сохранен в: " << output_file << "\n";
+        bool has_errors = parser.hasErrors();
+        
+        if (has_errors) {
+            std::cerr << "[Parser] Обнаружены синтаксические ошибки:\n";
+            for (const auto& error : parser.getErrors()) {
+                std::cerr << error.toString() << "\n";
+            }
+            
+            if (verbose) {
+                std::cerr << "\n" << parser.getMetrics().toString() << "\n";
+            }
+            
+            std::cout << "Парсер завершен с ошибками. AST сохранен в: " << output_file << "\n";
+            return 1;
+        }
+        
+        std::cout << "Парсер завершен успешно. AST сохранен в: " << output_file << "\n";
         if (verbose) {
             std::cout << "Формат вывода: " << format << "\n";
         }
