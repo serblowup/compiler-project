@@ -3,16 +3,18 @@
 #include <sstream>
 #include <algorithm>
 
-Parser::Parser(const std::vector<Token>& tokens) 
+Parser::Parser(const std::vector<Token>& tokens, const std::string& filename, const std::string& source_code) 
     : tokens(tokens), current(0), hadError(false), 
       recursion_depth(0), max_recursion_depth(1000), 
-      max_iterations(10000), in_error_recovery(false) {}
+      max_iterations(10000), in_error_recovery(false),
+      filename(filename), source_code(source_code) {}
 
 void Parser::reset(const std::vector<Token>& newTokens) {
     tokens = newTokens;
     current = 0;
     hadError = false;
     errors.clear();
+    formatted_errors.clear();
     suggestions.clear();
     metrics = ErrorMetrics();
     recursion_depth = 0;
@@ -97,7 +99,7 @@ Token Parser::consume(TokenType type, const std::string& message) {
         return inserted_token;
     }
     
-    error(message, current_token);
+    reportError(message, current_token, ErrorCode::EXPECTED_SEMICOLON);
     return current_token;
 }
 
@@ -118,7 +120,7 @@ Token Parser::consume(const std::vector<TokenType>& types, const std::string& me
         }
     }
     
-    error(message, current_token);
+    reportError(message, current_token, ErrorCode::EXPECTED_SEMICOLON);
     return current_token;
 }
 
@@ -137,6 +139,88 @@ std::string ParseError::toString() const {
         result += "\n  Suggestion: " + suggestion;
     }
     return result;
+}
+
+std::string Parser::getContextLine(int line) const {
+    if (source_code.empty()) return "";
+    
+    int current_line = 1;
+    size_t pos = 0;
+    size_t start = 0;
+    
+    while (pos < source_code.size() && current_line < line) {
+        if (source_code[pos] == '\n') {
+            current_line++;
+            start = pos + 1;
+        }
+        pos++;
+    }
+    
+    if (current_line != line) return "";
+    
+    size_t end = source_code.find('\n', start);
+    if (end == std::string::npos) end = source_code.size();
+    
+    return source_code.substr(start, end - start);
+}
+
+std::string Parser::generatePointer(int column) const {
+    if (column < 1) column = 1;
+    std::string pointer(column - 1, ' ');
+    pointer += '^';
+    return pointer;
+}
+
+void Parser::reportError(const std::string& message, const Token& token, ErrorCode code) {
+    if (metrics.limit_reached) return;
+    
+    hadError = true;
+    metrics.mark_error();
+    
+    FormattedError err;
+    err.filename = filename;
+    err.line = token.line;
+    err.column = token.column;
+    err.code = code;
+    err.message = message + " (got '" + token.lexeme + "')";
+    err.suggestion = get_suggestion(message, token);
+    
+    err.context_line = getContextLine(token.line);
+    if (!err.context_line.empty()) {
+        err.pointer_line = generatePointer(token.column);
+    }
+    
+    formatted_errors.push_back(err);
+    std::cerr << err.toString();
+}
+
+void Parser::reportError(const std::string& message, int line, int column, const std::string& token_lexeme, ErrorCode code) {
+    if (metrics.limit_reached) return;
+    
+    hadError = true;
+    metrics.mark_error();
+    
+    FormattedError err;
+    err.filename = filename;
+    err.line = line;
+    err.column = column;
+    err.code = code;
+    err.message = message + " (got '" + token_lexeme + "')";
+    
+    Token dummy_token;
+    dummy_token.type = TokenType::TOKEN_ERROR;
+    dummy_token.lexeme = token_lexeme;
+    dummy_token.line = line;
+    dummy_token.column = column;
+    err.suggestion = get_suggestion(message, dummy_token);
+    
+    err.context_line = getContextLine(line);
+    if (!err.context_line.empty()) {
+        err.pointer_line = generatePointer(column);
+    }
+    
+    formatted_errors.push_back(err);
+    std::cerr << err.toString();
 }
 
 TokenType Parser::guess_expected_token(const std::string& context) {
@@ -397,7 +481,7 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
         if (isAtEnd()) break;
         
         if (peek().type == TokenType::tkn_RBRACE) {
-            error("Неожиданная закрывающая скобка '}' на верхнем уровне");
+            reportError("Неожиданная закрывающая скобка '}' на верхнем уровне", peek(), ErrorCode::UNEXPECTED_TOKEN);
             advance();
             continue;
         }
@@ -410,7 +494,7 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                 if (!advanced_synchronize()) break;
             }
         } catch (const std::exception& e) {
-            error(std::string("Фатальная ошибка: ") + e.what());
+            reportError(std::string("Фатальная ошибка: ") + e.what(), peek(), ErrorCode::UNEXPECTED_TOKEN);
             if (!advanced_synchronize()) break;
         }
     }
@@ -421,7 +505,7 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
 std::unique_ptr<DeclarationNode> Parser::parseDeclaration() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе объявления");
+        reportError("Превышена максимальная глубина рекурсии при разборе объявления", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -441,7 +525,7 @@ std::unique_ptr<DeclarationNode> Parser::parseDeclaration() {
                 dynamic_cast<DeclarationNode*>(varDecl.release()));
         }
     } else {
-        error("Ожидалось объявление (fn, struct или объявление переменной)");
+        reportError("Ожидалось объявление (fn, struct или объявление переменной)", peek(), ErrorCode::EXPECTED_STATEMENT);
     }
     
     recursion_depth--;
@@ -451,7 +535,7 @@ std::unique_ptr<DeclarationNode> Parser::parseDeclaration() {
 std::unique_ptr<FunctionDeclNode> Parser::parseFunctionDecl() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе функции");
+        reportError("Превышена максимальная глубина рекурсии при разборе функции", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -468,7 +552,7 @@ std::unique_ptr<FunctionDeclNode> Parser::parseFunctionDecl() {
     }
     
     if (!check(TokenType::tkn_LBRACE)) {
-        error("Ожидалось тело функции (блок { ... })");
+        reportError("Ожидалось тело функции (блок { ... })", peek(), ErrorCode::EXPECTED_LBRACE);
         int recover_iterations = 0;
         while (!isAtEnd() && !check(TokenType::tkn_LBRACE) && 
                !check(TokenType::tkn_SEMICOLON) && recover_iterations < 100) {
@@ -480,7 +564,7 @@ std::unique_ptr<FunctionDeclNode> Parser::parseFunctionDecl() {
     
     auto body = parseBlock();
     if (!body) {
-        error("Ожидалось тело функции");
+        reportError("Ожидалось тело функции", peek(), ErrorCode::EXPECTED_LBRACE);
         recursion_depth--;
         return nullptr;
     }
@@ -502,7 +586,7 @@ std::unique_ptr<FunctionDeclNode> Parser::parseFunctionDecl() {
 std::unique_ptr<StructDeclNode> Parser::parseStructDecl() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе структуры");
+        reportError("Превышена максимальная глубина рекурсии при разборе структуры", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -535,13 +619,13 @@ std::unique_ptr<StructDeclNode> Parser::parseStructDecl() {
                 structDecl->addField(std::move(field));
             }
         } else {
-            error("Ожидалось объявление поля");
+            reportError("Ожидалось объявление поля", peek(), ErrorCode::EXPECTED_STATEMENT);
             if (!advanced_synchronize()) break;
         }
     }
     
     if (isAtEnd() && !check(TokenType::tkn_RBRACE)) {
-        error("Неожиданный конец файла - отсутствует закрывающая скобка '}' для структуры", nameToken);
+        reportError("Неожиданный конец файла - отсутствует закрывающая скобка '}' для структуры", nameToken, ErrorCode::EXPECTED_RBRACE);
         recursion_depth--;
         return structDecl;
     }
@@ -559,7 +643,7 @@ std::unique_ptr<StructDeclNode> Parser::parseStructDecl() {
 std::unique_ptr<VarDeclStmtNode> Parser::parseVarDecl() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе объявления переменной");
+        reportError("Превышена максимальная глубина рекурсии при разборе объявления переменной", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -575,7 +659,7 @@ std::unique_ptr<VarDeclStmtNode> Parser::parseVarDecl() {
     if (check(TokenType::tkn_SEMICOLON)) {
         advance();
     } else if (!check(TokenType::tkn_RBRACE) && !isAtEnd()) {
-        error("Ожидалась ';' после объявления переменной");
+        reportError("Ожидалась ';' после объявления переменной", peek(), ErrorCode::EXPECTED_SEMICOLON);
         
         if (!in_error_recovery) {
             in_error_recovery = true;
@@ -610,21 +694,21 @@ std::string Parser::parseType() {
         if (match(TokenType::tkn_IDENTIFIER)) {
             return "struct " + previous().lexeme;
         } else {
-            error("Ожидалось имя структуры после 'struct'");
+            reportError("Ожидалось имя структуры после 'struct'", peek(), ErrorCode::EXPECTED_IDENTIFIER);
             return "struct";
         }
     } else if (match(TokenType::tkn_IDENTIFIER)) {
         return previous().lexeme;
     }
     
-    error("Ожидался тип (int, float, bool, void, struct или идентификатор)");
+    reportError("Ожидался тип (int, float, bool, void, struct или идентификатор)", peek(), ErrorCode::EXPECTED_TYPE);
     return "int";
 }
 
 std::unique_ptr<ParamNode> Parser::parseParameter() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе параметра");
+        reportError("Превышена максимальная глубина рекурсии при разборе параметра", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -661,7 +745,7 @@ std::vector<std::unique_ptr<ParamNode>> Parser::parseParameterList() {
                     params.push_back(std::move(param));
                 }
             } else {
-                error("Ожидался тип параметра после ','");
+                reportError("Ожидался тип параметра после ','", peek(), ErrorCode::EXPECTED_PARAMETER);
                 break;
             }
         }
@@ -673,7 +757,7 @@ std::vector<std::unique_ptr<ParamNode>> Parser::parseParameterList() {
 std::unique_ptr<StatementNode> Parser::parseStatement() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе инструкции");
+        reportError("Превышена максимальная глубина рекурсии при разборе инструкции", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -710,7 +794,7 @@ std::unique_ptr<StatementNode> Parser::parseStatement() {
     } else if (check(TokenType::tkn_SEMICOLON)) {
         result = parseEmptyStmt();
     } else {
-        error("Ожидалась инструкция");
+        reportError("Ожидалась инструкция", peek(), ErrorCode::EXPECTED_STATEMENT);
         if (!advanced_synchronize()) {
             result = nullptr;
         }
@@ -727,7 +811,7 @@ std::unique_ptr<StatementNode> Parser::parseBlockStmt() {
 std::unique_ptr<StatementNode> Parser::parseIfStmt() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе if");
+        reportError("Превышена максимальная глубина рекурсии при разборе if", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -763,7 +847,7 @@ std::unique_ptr<StatementNode> Parser::parseElsePart() {
 std::unique_ptr<StatementNode> Parser::parseWhileStmt() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе while");
+        reportError("Превышена максимальная глубина рекурсии при разборе while", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -790,7 +874,7 @@ std::unique_ptr<StatementNode> Parser::parseWhileStmt() {
 std::unique_ptr<StatementNode> Parser::parseForStmt() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе for");
+        reportError("Превышена максимальная глубина рекурсии при разборе for", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -819,7 +903,7 @@ std::unique_ptr<StatementNode> Parser::parseForStmt() {
                 std::move(expr)
             );
             if (!check(TokenType::tkn_SEMICOLON)) {
-                error("Ожидалась ';' после выражения в инициализации for");
+                reportError("Ожидалась ';' после выражения в инициализации for", peek(), ErrorCode::EXPECTED_SEMICOLON);
             } else {
                 advance();
             }
@@ -835,7 +919,7 @@ std::unique_ptr<StatementNode> Parser::parseForStmt() {
             std::move(expr)
         );
         if (!check(TokenType::tkn_SEMICOLON)) {
-            error("Ожидалась ';' после выражения в инициализации for");
+            reportError("Ожидалась ';' после выражения в инициализации for", peek(), ErrorCode::EXPECTED_SEMICOLON);
         } else {
             advance();
         }
@@ -870,7 +954,7 @@ std::unique_ptr<StatementNode> Parser::parseForStmt() {
 std::unique_ptr<StatementNode> Parser::parseReturnStmt() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе return");
+        reportError("Превышена максимальная глубина рекурсии при разборе return", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -888,7 +972,7 @@ std::unique_ptr<StatementNode> Parser::parseReturnStmt() {
     if (check(TokenType::tkn_SEMICOLON)) {
         advance();
     } else if (!check(TokenType::tkn_RBRACE) && !isAtEnd()) {
-        error("Ожидалась ';' после return");
+        reportError("Ожидалась ';' после return", peek(), ErrorCode::EXPECTED_SEMICOLON);
         
         if (!in_error_recovery) {
             in_error_recovery = true;
@@ -916,7 +1000,7 @@ std::unique_ptr<StatementNode> Parser::parseReturnStmt() {
 std::unique_ptr<StatementNode> Parser::parseExprStmt() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе выражения-инструкции");
+        reportError("Превышена максимальная глубина рекурсии при разборе выражения-инструкции", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -926,7 +1010,7 @@ std::unique_ptr<StatementNode> Parser::parseExprStmt() {
     if (check(TokenType::tkn_SEMICOLON)) {
         advance();
     } else if (!check(TokenType::tkn_RBRACE) && !isAtEnd()) {
-        error("Ожидалась ';' после выражения");
+        reportError("Ожидалась ';' после выражения", peek(), ErrorCode::EXPECTED_SEMICOLON);
         
         if (!in_error_recovery) {
             in_error_recovery = true;
@@ -962,7 +1046,7 @@ std::unique_ptr<StatementNode> Parser::parseEmptyStmt() {
 std::unique_ptr<BlockStmtNode> Parser::parseBlock() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе блока");
+        reportError("Превышена максимальная глубина рекурсии при разборе блока", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return nullptr;
     }
@@ -973,7 +1057,7 @@ std::unique_ptr<BlockStmtNode> Parser::parseBlock() {
     } else if (check(TokenType::tkn_LBRACE)) {
         lbrace = advance();
     } else {
-        error("Ожидалась '{' в начале блока");
+        reportError("Ожидалась '{' в начале блока", peek(), ErrorCode::EXPECTED_LBRACE);
         recursion_depth--;
         return nullptr;
     }
@@ -998,7 +1082,7 @@ std::unique_ptr<BlockStmtNode> Parser::parseBlock() {
     }
     
     if (isAtEnd()) {
-        error("Неожиданный конец файла - отсутствует закрывающая скобка '}'", lbrace);
+        reportError("Неожиданный конец файла - отсутствует закрывающая скобка '}'", lbrace, ErrorCode::EXPECTED_RBRACE);
         recursion_depth--;
         return block;
     }
@@ -1012,7 +1096,7 @@ std::unique_ptr<BlockStmtNode> Parser::parseBlock() {
 std::unique_ptr<ExpressionNode> Parser::parseExpression() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе выражения");
+        reportError("Превышена максимальная глубина рекурсии при разборе выражения", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1026,7 +1110,7 @@ std::unique_ptr<ExpressionNode> Parser::parseExpression() {
 std::unique_ptr<ExpressionNode> Parser::parseAssignment() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе присваивания");
+        reportError("Превышена максимальная глубина рекурсии при разборе присваивания", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1057,7 +1141,7 @@ std::unique_ptr<ExpressionNode> Parser::parseAssignment() {
 std::unique_ptr<ExpressionNode> Parser::parseLogicalOr() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе logical or");
+        reportError("Превышена максимальная глубина рекурсии при разборе logical or", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1082,7 +1166,7 @@ std::unique_ptr<ExpressionNode> Parser::parseLogicalOr() {
 std::unique_ptr<ExpressionNode> Parser::parseLogicalAnd() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе logical and");
+        reportError("Превышена максимальная глубина рекурсии при разборе logical and", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1107,7 +1191,7 @@ std::unique_ptr<ExpressionNode> Parser::parseLogicalAnd() {
 std::unique_ptr<ExpressionNode> Parser::parseEquality() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе равенства");
+        reportError("Превышена максимальная глубина рекурсии при разборе равенства", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1132,7 +1216,7 @@ std::unique_ptr<ExpressionNode> Parser::parseEquality() {
 std::unique_ptr<ExpressionNode> Parser::parseRelational() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе отношения");
+        reportError("Превышена максимальная глубина рекурсии при разборе отношения", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1158,7 +1242,7 @@ std::unique_ptr<ExpressionNode> Parser::parseRelational() {
 std::unique_ptr<ExpressionNode> Parser::parseAdditive() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе сложения");
+        reportError("Превышена максимальная глубина рекурсии при разборе сложения", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1183,7 +1267,7 @@ std::unique_ptr<ExpressionNode> Parser::parseAdditive() {
 std::unique_ptr<ExpressionNode> Parser::parseMultiplicative() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе умножения");
+        reportError("Превышена максимальная глубина рекурсии при разборе умножения", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1209,7 +1293,7 @@ std::unique_ptr<ExpressionNode> Parser::parseMultiplicative() {
 std::unique_ptr<ExpressionNode> Parser::parseUnary() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе унарного выражения");
+        reportError("Превышена максимальная глубина рекурсии при разборе унарного выражения", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1233,7 +1317,7 @@ std::unique_ptr<ExpressionNode> Parser::parseUnary() {
 std::unique_ptr<ExpressionNode> Parser::parsePostfix() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе постфиксного выражения");
+        reportError("Превышена максимальная глубина рекурсии при разборе постфиксного выражения", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1293,7 +1377,7 @@ std::unique_ptr<ExpressionNode> Parser::parsePostfix() {
 std::unique_ptr<ExpressionNode> Parser::parsePrimary() {
     recursion_depth++;
     if (recursion_depth > max_recursion_depth) {
-        error("Превышена максимальная глубина рекурсии при разборе первичного выражения");
+        reportError("Превышена максимальная глубина рекурсии при разборе первичного выражения", peek(), ErrorCode::UNEXPECTED_TOKEN);
         recursion_depth--;
         return std::make_unique<LiteralExprNode>(0, 0, 0);
     }
@@ -1339,13 +1423,13 @@ std::unique_ptr<ExpressionNode> Parser::parsePrimary() {
     } else if (match(TokenType::tkn_LPAREN)) {
         auto expr = parseExpression();
         if (!check(TokenType::tkn_RPAREN)) {
-            error("Ожидалась ')' после выражения");
+            reportError("Ожидалась ')' после выражения", peek(), ErrorCode::EXPECTED_RPAREN);
         } else {
             advance();
         }
         result = std::move(expr);
     } else {
-        error("Ожидалось выражение");
+        reportError("Ожидалось выражение", peek(), ErrorCode::EXPECTED_EXPRESSION);
         result = std::make_unique<LiteralExprNode>(0, 0, 0);
     }
     
@@ -1382,6 +1466,8 @@ std::vector<std::unique_ptr<ExpressionNode>> Parser::parseArgumentList() {
 bool Parser::hasErrors() const { return hadError; }
 
 const std::vector<ParseError>& Parser::getErrors() const { return errors; }
+
+const std::vector<FormattedError>& Parser::getFormattedErrors() const { return formatted_errors; }
 
 const ErrorMetrics& Parser::getMetrics() const { return metrics; }
 

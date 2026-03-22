@@ -1,12 +1,4 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> int
-    body:
-      Block [line 1]:
-        VarDecl [line 2]: int x =
-          Binary [line 2]: ADD
-            left: Literal [line 2]: int 5
-            right: Binary [line 0]: MUL
-            right:   left: Literal [line 0]: int 0
-            right:   right: Literal [line 2]: int 3
-        ReturnStmt [line 3]:
-          Identifier [line 3]: x
+[ERROR] tests/parser/invalid/bad_expression.src:2:17: EXPECTED_EXPRESSION: Ожидалось выражение (got '*')
+  Suggestion: Проверьте синтаксис выражения
+[CONTEXT]     int x = 5 + * 3;
+[POINTER]                 ^

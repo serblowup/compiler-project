@@ -1,6 +1,4 @@
-Program [line 1]:
-  FunctionDecl [line 1]: ( -> int
-    body:
-      Block [line 1]:
-        ReturnStmt [line 2]:
-          Literal [line 2]: int 0
+[ERROR] tests/parser/invalid/missing_function_name.src:1:4: EXPECTED_SEMICOLON: Ожидалось имя функции (got '(')
+  Suggestion: После 'fn' должно следовать имя функции
+[CONTEXT] fn () -> int {
+[POINTER]    ^

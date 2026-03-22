@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <iomanip>
 
 enum class RecoveryType {
     NONE,
@@ -11,6 +12,76 @@ enum class RecoveryType {
     INSERT_TOKEN,
     DELETE_TOKEN,
     REPLACE_TOKEN
+};
+
+// Ошибки
+enum class ErrorCode {
+    EXPECTED_EXPRESSION,
+    EXPECTED_STATEMENT,
+    EXPECTED_SEMICOLON,
+    EXPECTED_RPAREN,
+    EXPECTED_RBRACE,
+    EXPECTED_LPAREN,
+    EXPECTED_LBRACE,
+    EXPECTED_IDENTIFIER,
+    EXPECTED_TYPE,
+    EXPECTED_PARAMETER,
+    MISMATCHED_PARENTHESES,
+    UNEXPECTED_TOKEN,
+    INVALID_VARIABLE_NAME,
+    MISSING_FUNCTION_NAME,
+    MISSING_RETURN_TYPE,
+    INVALID_EXPRESSION,
+    EXPECTED_EXPRESSION_AFTER_RETURN
+};
+
+struct FormattedError {
+    std::string filename;
+    int line;
+    int column;
+    ErrorCode code;
+    std::string message;
+    std::string context_line;
+    std::string pointer_line;
+    std::string suggestion;
+    
+    std::string toString() const {
+        std::ostringstream oss;
+        oss << "[ERROR] " << filename << ":" << line << ":" << column 
+            << ": " << errorCodeToString(code) << ": " << message;
+        if (!suggestion.empty()) {
+            oss << "\n  Suggestion: " << suggestion;
+        }
+        oss << "\n";
+        if (!context_line.empty()) {
+            oss << "[CONTEXT] " << context_line << "\n";
+            oss << "[POINTER] " << pointer_line << "\n";
+        }
+        return oss.str();
+    }
+    
+    static std::string errorCodeToString(ErrorCode code) {
+        switch (code) {
+            case ErrorCode::EXPECTED_EXPRESSION: return "EXPECTED_EXPRESSION";
+            case ErrorCode::EXPECTED_STATEMENT: return "EXPECTED_STATEMENT";
+            case ErrorCode::EXPECTED_SEMICOLON: return "EXPECTED_SEMICOLON";
+            case ErrorCode::EXPECTED_RPAREN: return "EXPECTED_RPAREN";
+            case ErrorCode::EXPECTED_RBRACE: return "EXPECTED_RBRACE";
+            case ErrorCode::EXPECTED_LPAREN: return "EXPECTED_LPAREN";
+            case ErrorCode::EXPECTED_LBRACE: return "EXPECTED_LBRACE";
+            case ErrorCode::EXPECTED_IDENTIFIER: return "EXPECTED_IDENTIFIER";
+            case ErrorCode::EXPECTED_TYPE: return "EXPECTED_TYPE";
+            case ErrorCode::EXPECTED_PARAMETER: return "EXPECTED_PARAMETER";
+            case ErrorCode::MISMATCHED_PARENTHESES: return "MISMATCHED_PARENTHESES";
+            case ErrorCode::UNEXPECTED_TOKEN: return "UNEXPECTED_TOKEN";
+            case ErrorCode::INVALID_VARIABLE_NAME: return "INVALID_VARIABLE_NAME";
+            case ErrorCode::MISSING_FUNCTION_NAME: return "MISSING_FUNCTION_NAME";
+            case ErrorCode::MISSING_RETURN_TYPE: return "MISSING_RETURN_TYPE";
+            case ErrorCode::INVALID_EXPRESSION: return "INVALID_EXPRESSION";
+            case ErrorCode::EXPECTED_EXPRESSION_AFTER_RETURN: return "EXPECTED_EXPRESSION_AFTER_RETURN";
+            default: return "UNKNOWN_ERROR";
+        }
+    }
 };
 
 struct ErrorMetrics {
@@ -80,7 +151,7 @@ struct ErrorMetrics {
         oss << "Метрики ошибок:\n";
         oss << "  Всего обнаружено ошибок: " << total_errors_detected << "\n";
         oss << "  Восстановлено ошибок: " << recovered_errors << "\n";
-        oss << "  Процент восстановления: " << get_recovery_rate() << "%\n";
+        oss << "  Процент восстановления: " << std::fixed << std::setprecision(2) << get_recovery_rate() << "%\n";
         oss << "  Восстановлений на уровне фраз: " << phrase_level_recoveries << "\n";
         oss << "    - Вставка токена: " << insert_token_recoveries << "\n";
         oss << "    - Удаление токена: " << delete_token_recoveries << "\n";

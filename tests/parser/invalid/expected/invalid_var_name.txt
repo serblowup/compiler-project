@@ -1,7 +1,8 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> int
-    body:
-      Block [line 1]:
-        VarDecl [line 2]: int 123
-        ReturnStmt [line 3]:
-          Literal [line 3]: int 0
+[ERROR] tests/parser/invalid/invalid_var_name.src:2:9: EXPECTED_SEMICOLON: Ожидалось имя переменной (got '123')
+  Suggestion: Имя переменной не может начинаться с цифры
+[CONTEXT]     int 123abc = 5;
+[POINTER]         ^
+[ERROR] tests/parser/invalid/invalid_var_name.src:2:9: EXPECTED_SEMICOLON: Ожидалась ';' после объявления переменной (got '123')
+  Suggestion: Возможно, пропущена точка с запятой ';'
+[CONTEXT]     int 123abc = 5;
+[POINTER]         ^

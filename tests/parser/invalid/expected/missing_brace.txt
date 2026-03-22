@@ -1,8 +1,4 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> int
-    body:
-      Block [line 1]:
-        VarDecl [line 2]: int x =
-          Literal [line 2]: int 5
-        ReturnStmt [line 3]:
-          Identifier [line 3]: x
+[ERROR] tests/parser/invalid/missing_brace.src:1:18: EXPECTED_RBRACE: Неожиданный конец файла - отсутствует закрывающая скобка '}' (got '{')
+  Suggestion: Возможно, не хватает закрывающей фигурной скобки '}'
+[CONTEXT] fn test() -> int {
+[POINTER]                  ^

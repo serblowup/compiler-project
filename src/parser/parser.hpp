@@ -28,12 +28,16 @@ class Parser {
     size_t current;
     bool hadError;
     std::vector<ParseError> errors;
+    std::vector<FormattedError> formatted_errors;
     ErrorMetrics metrics;
     int recursion_depth;
     int max_recursion_depth;
     int max_iterations;
     bool in_error_recovery;
     std::vector<RecoverySuggestion> suggestions;
+    
+    std::string filename;
+    std::string source_code;
     
     Token peek() const;
     Token previous() const;
@@ -57,7 +61,11 @@ class Parser {
     std::vector<RecoverySuggestion> generate_suggestions(const Token& at_token);
     void error(const std::string& message);
     void error(const std::string& message, const Token& token);
+    void reportError(const std::string& message, const Token& token, ErrorCode code);
+    void reportError(const std::string& message, int line, int column, const std::string& token_lexeme, ErrorCode code);
     std::string get_suggestion(const std::string& message, const Token& token);
+    std::string getContextLine(int line) const;
+    std::string generatePointer(int column) const;
     
     std::unique_ptr<ProgramNode> parseProgram();
     std::unique_ptr<DeclarationNode> parseDeclaration();
@@ -95,10 +103,11 @@ class Parser {
     std::vector<std::unique_ptr<ExpressionNode>> parseArgumentList();
     
 public:
-    Parser(const std::vector<Token>& tokens);
+    Parser(const std::vector<Token>& tokens, const std::string& filename = "<stdin>", const std::string& source_code = "");
     std::unique_ptr<ProgramNode> parse();
     bool hasErrors() const;
     const std::vector<ParseError>& getErrors() const;
+    const std::vector<FormattedError>& getFormattedErrors() const;
     const ErrorMetrics& getMetrics() const;
     const std::vector<RecoverySuggestion>& getSuggestions() const;
     void setMaxErrorCount(int max);
