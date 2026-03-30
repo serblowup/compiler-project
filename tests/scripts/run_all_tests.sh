@@ -71,10 +71,16 @@ echo "Тесты парсера"
 run_test_suite "./tests/scripts/test_parser.sh" "tests/parser/valid" "tests/parser/valid/expected" "PARSER-VALID"
 run_test_suite "./tests/scripts/test_parser.sh" "tests/parser/invalid" "tests/parser/invalid/expected" "PARSER-INVALID"
 
+# Тесты семантического анализа
+echo "Тесты семантического анализа"
+run_test_suite "./tests/scripts/test_semantic.sh" "tests/semantic/valid" "tests/semantic/valid/expected" "SEMANTIC-VALID"
+run_test_suite "./tests/scripts/test_semantic.sh" "tests/semantic/invalid" "tests/semantic/invalid/expected" "SEMANTIC-INVALID"
+
 # Интеграционные тесты
 echo "Интеграционные тесты"
 run_integration_tests "./tests/scripts/test_integration.sh"
 
+echo ""
 echo "[Итоговый результат]"
 echo "Всего тестов: $TOTAL_TESTS"
 echo "Успешно: $TOTAL_PASSED"

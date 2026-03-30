@@ -1,0 +1,13 @@
+fn main() -> int {
+    bool b = true;
+    int x = 10;
+    
+    int y = b + x;
+    
+    bool c = x && b;
+    
+    float f = 3.14;
+    x = f % x;
+    
+    return 0;
+}

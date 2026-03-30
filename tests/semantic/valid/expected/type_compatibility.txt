@@ -1,0 +1,60 @@
+[Разукрашенное AST]
+Program [line 1]:
+  FunctionDecl [line 1]: main -> int
+    body:
+      Block [line 1]:
+        VarDecl [line 2]: int a [type: int] =
+          Literal [line 2] [type: int]: int 5
+        VarDecl [line 3]: float b [type: float] =
+          Literal [line 3] [type: float]: float 3.140000
+        VarDecl [line 4]: bool c [type: bool] =
+          Literal [line 4] [type: bool]: bool true
+        ExprStmt [line 6]:
+          Assignment [line 6] [type: float]: ASSIGN
+            target: Identifier [line 6] [type: float]: b
+            value: Identifier [line 6] [type: int]: a
+        VarDecl [line 8]: float d [type: float] =
+          Binary [line 8] [type: float]: ADD
+            left: Identifier [line 8] [type: int]: a
+            right: Identifier [line 8] [type: float]: b
+        IfStmt [line 10]:
+          condition: Identifier [line 10] [type: int]: a
+          then:
+            Block [line 10]:
+              ExprStmt [line 11]:
+                Assignment [line 11] [type: int]: ASSIGN
+                  target: Identifier [line 11] [type: int]: a
+                  value: Literal [line 11] [type: int]: int 10
+        IfStmt [line 14]:
+          condition: Binary [line 14] [type: bool]: LT
+          condition:   left: Identifier [line 14] [type: int]: a
+          condition:   right: Identifier [line 14] [type: float]: b
+          then:
+            Block [line 14]:
+              ExprStmt [line 15]:
+                Assignment [line 15] [type: int]: ASSIGN
+                  target: Identifier [line 15] [type: int]: a
+                  value: Literal [line 15] [type: int]: int 1
+        ReturnStmt [line 18] [type: int]:
+          Literal [line 18] [type: int]: int 0
+
+[Таблица символов]
+Symbol Table:
+Scope 0 [global:global]:
+  main : fn() -> int [function] -> int at line 1:4
+  Scope 1 [function:main] (parent: global:global):
+    (no symbols)
+    Scope 2 [block] (parent: function:main):
+      c : bool [variable] at line 4:10
+      b : float [variable] at line 3:11
+      d : float [variable] at line 8:11
+      a : int [variable] at line 2:9
+      Scope 3 [if-then] (parent: block):
+        (no symbols)
+        Scope 4 [block] (parent: if-then):
+          (no symbols)
+      Scope 5 [if-then] (parent: block):
+        (no symbols)
+        Scope 6 [block] (parent: if-then):
+          (no symbols)
+

@@ -1,0 +1,7 @@
+semantic error: переменная типа void - нельзя объявить переменную типа void
+  --> tests/semantic/invalid/void_variable.src:2:10
+   |
+2 |     void x;
+   |          ^
+   |
+

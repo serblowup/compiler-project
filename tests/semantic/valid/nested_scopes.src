@@ -1,0 +1,21 @@
+fn test_scopes() -> int {
+    int x = 10;
+    
+    if (x > 5) {
+        int x = 20;
+        x = 15;
+    }
+    
+    x = 30;
+    
+    while (x < 50) {
+        int y = x;
+        x = x + 1;
+    }
+    
+    for (int i = 0; i < 10; i = i + 1) {
+        int z = i;
+    }
+    
+    return x;
+}

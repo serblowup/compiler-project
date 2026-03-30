@@ -1,0 +1,8 @@
+semantic error: необъявленный идентификатор - тип 'Node' не объявлен
+  --> tests/semantic/invalid/struct_self_reference.src:3:10
+   |
+3 |     Node next;
+   |          ^
+   |
+   = подсказка: проверьте, объявлена ли переменная '' в текущей области видимости
+

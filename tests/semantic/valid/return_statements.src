@@ -1,0 +1,16 @@
+fn void_function() -> void {
+    return;
+}
+
+fn int_function(int x) -> int {
+    if (x > 0) {
+        return x;
+    }
+    return -x;
+}
+
+fn main() -> int {
+    void_function();
+    int result = int_function(42);
+    return result;
+}

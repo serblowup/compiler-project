@@ -15,13 +15,19 @@ SOURCES = $(wildcard $(SRCDIR)/*.cpp) \
           $(wildcard $(SRCDIR)/lexer/*.cpp) \
           $(wildcard $(SRCDIR)/parser/*.cpp) \
           $(wildcard $(SRCDIR)/preprocessor/*.cpp) \
+          $(wildcard $(SRCDIR)/semantic/*.cpp) \
           $(wildcard $(SRCDIR)/utils/*.cpp)
+
+ifeq ($(wildcard $(SRCDIR)/semantic/*.cpp),)
+    SOURCES += $(SRCDIR)/semantic/semantic_analyzer.cpp
+endif
+
 OBJECTS = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOURCES))
 OBJECTS_COV = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR_COV)/%.o,$(SOURCES))
 
 .PHONY: all clean build test scripts coverage coverage-simple \
         test-lexer test-preproc test-parser test-parser-valid test-parser-invalid test-roundtrip test-integration \
-        lexer preprocess parse
+        test-semantic lexer preprocess parse check
 
 all: $(TARGET)
 
@@ -76,6 +82,15 @@ test-parser: scripts $(TARGET)
 test-integration: scripts $(TARGET)
 	@./tests/scripts/test_integration.sh
 
+# Запуск семантических тестов
+test-semantic: scripts $(TARGET)
+	@if [ -d "tests/semantic/valid" ]; then \
+		./tests/scripts/test_semantic.sh tests/semantic/valid tests/semantic/valid/expected "SEMANTIC-VALID"; \
+	fi
+	@if [ -d "tests/semantic/invalid" ]; then \
+		./tests/scripts/test_semantic.sh tests/semantic/invalid tests/semantic/invalid/expected "SEMANTIC-INVALID"; \
+	fi
+
 # Запуск тестов с coverage
 coverage: scripts build-cov
 	@echo "Запуск тестов с coverage..."
@@ -129,10 +144,28 @@ coverage: scripts build-cov
 		done \
 	fi
 
+	@if [ -d "tests/semantic/valid" ]; then \
+		for test_file in tests/semantic/valid/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				echo "Запуск $$test_file"; \
+				./$(TARGET_COV) check --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
+	@if [ -d "tests/semantic/invalid" ]; then \
+		for test_file in tests/semantic/invalid/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				echo "Запуск $$test_file"; \
+				./$(TARGET_COV) check --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
 	@for test_file in examples/*.src; do \
 		if [ -f "$$test_file" ]; then \
 			echo "Запуск $$test_file"; \
-			./$(TARGET_COV) parse --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+			./$(TARGET_COV) check --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
 		fi \
 	done
 
@@ -211,9 +244,24 @@ coverage-simple:
 		done \
 	fi
 
+	@if [ -d "tests/semantic/valid" ]; then \
+		for test_file in tests/semantic/valid/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				./$(TARGET_COV) check --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+	@if [ -d "tests/semantic/invalid" ]; then \
+		for test_file in tests/semantic/invalid/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				./$(TARGET_COV) check --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
 	@for test_file in examples/*.src; do \
 		if [ -f "$$test_file" ]; then \
-			./$(TARGET_COV) parse --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+			./$(TARGET_COV) check --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
 		fi \
 	done
 
@@ -259,3 +307,29 @@ parse: $(TARGET)
 	else \
 		./$(TARGET) parse --input $(INPUT) --output $(OUTPUT) --format $(FORMAT); \
 	fi
+
+# Запуск семантического анализа на отдельном файле
+check: $(TARGET)
+	@if [ -z "$(INPUT)" ] || [ -z "$(OUTPUT)" ]; then \
+		echo "Использование: make check INPUT=<файл> OUTPUT=<файл> [DUMP_SYMBOLS=1] [SHOW_TYPES=1] [FORMAT=text|dot|json]"; \
+		echo "Пример: make check INPUT=examples/factorial.src OUTPUT=result.txt DUMP_SYMBOLS=1 SHOW_TYPES=1"; \
+		exit 1; \
+	fi
+	@CMD="./$(TARGET) check --input $(INPUT) --output $(OUTPUT)"
+	@if [ -n "$(FORMAT)" ]; then \
+		CMD="$$CMD --format $(FORMAT)"; \
+	fi
+	@if [ -n "$(DUMP_SYMBOLS)" ] && [ "$(DUMP_SYMBOLS)" = "1" ]; then \
+		CMD="$$CMD --dump-symbols"; \
+	fi
+	@if [ -n "$(SHOW_TYPES)" ] && [ "$(SHOW_TYPES)" = "1" ]; then \
+		CMD="$$CMD --show-types"; \
+	fi
+	@if [ -n "$(SYMBOL_FORMAT)" ]; then \
+		CMD="$$CMD --symbol-format $(SYMBOL_FORMAT)"; \
+	fi
+	@if [ -n "$(VERBOSE)" ] && [ "$(VERBOSE)" = "1" ]; then \
+		CMD="$$CMD --verbose"; \
+	fi
+	@echo "Выполнение: $$CMD"
+	@$$CMD

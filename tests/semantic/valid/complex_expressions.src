@@ -1,0 +1,10 @@
+fn compute(int a, int b, float c) -> float {
+    float result = (a + b) * c;
+    result = result - (a * c) + (b / c);
+    return result;
+}
+
+fn main() -> int {
+    float val = compute(10, 20, 2.5);
+    return 0;
+}

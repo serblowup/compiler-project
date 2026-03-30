@@ -1,0 +1,58 @@
+[Разукрашенное AST]
+Program [line 1]:
+  FunctionDecl [line 1]: compute -> float
+    parameters:
+      Param [line 1]: int a
+      Param [line 1]: int b
+      Param [line 1]: float c
+    body:
+      Block [line 1]:
+        VarDecl [line 2]: float result [type: float] =
+          Binary [line 2] [type: float]: MUL
+            left: Binary [line 2] [type: int]: ADD
+            left:   left: Identifier [line 2] [type: int]: a
+            left:   right: Identifier [line 2] [type: int]: b
+            right: Identifier [line 2] [type: float]: c
+        ExprStmt [line 3]:
+          Assignment [line 3] [type: float]: ASSIGN
+            target: Identifier [line 3] [type: float]: result
+            value: Binary [line 3] [type: float]: ADD
+            value:   left: Binary [line 3] [type: float]: SUB
+            value:   left:   left: Identifier [line 3] [type: float]: result
+            value:   left:   right: Binary [line 3] [type: float]: MUL
+            value:   left:   right:   left: Identifier [line 3] [type: int]: a
+            value:   left:   right:   right: Identifier [line 3] [type: float]: c
+            value:   right: Binary [line 3] [type: float]: DIV
+            value:   right:   left: Identifier [line 3] [type: int]: b
+            value:   right:   right: Identifier [line 3] [type: float]: c
+        ReturnStmt [line 4] [type: float]:
+          Identifier [line 4] [type: float]: result
+  FunctionDecl [line 7]: main -> int
+    body:
+      Block [line 7]:
+        VarDecl [line 8]: float val [type: float] =
+          Call [line 8] [type: float]:
+            callee: Identifier [line 8] [type: fn(int, int, float) -> float]: compute
+            arguments:
+              Literal [line 8] [type: int]: int 10
+              Literal [line 8] [type: int]: int 20
+              Literal [line 8] [type: float]: float 2.500000
+        ReturnStmt [line 9] [type: int]:
+          Literal [line 9] [type: int]: int 0
+
+[Таблица символов]
+Symbol Table:
+Scope 0 [global:global]:
+  main : fn() -> int [function] -> int at line 7:4
+  compute : fn(int, int, float) -> float [function] -> float (params: a: int, b: int, c: float) at line 1:4
+  Scope 1 [function:compute] (parent: global:global):
+    c : float [parameter] at line 1:32 [offset: 8, size: 4]
+    b : int [parameter] at line 1:23 [offset: 4, size: 4]
+    a : int [parameter] at line 1:16 [offset: 0, size: 4]
+    Scope 2 [block] (parent: function:compute):
+      result : float [variable] at line 2:11
+  Scope 3 [function:main] (parent: global:global):
+    (no symbols)
+    Scope 4 [block] (parent: function:main):
+      val : float [variable] at line 8:11
+

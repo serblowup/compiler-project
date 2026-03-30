@@ -1,0 +1,79 @@
+[Разукрашенное AST]
+Program [line 1]:
+  FunctionDecl [line 1]: test_scopes -> int
+    body:
+      Block [line 1]:
+        VarDecl [line 2]: int x [type: int] =
+          Literal [line 2] [type: int]: int 10
+        IfStmt [line 4]:
+          condition: Binary [line 4] [type: bool]: GT
+          condition:   left: Identifier [line 4] [type: int]: x
+          condition:   right: Literal [line 4] [type: int]: int 5
+          then:
+            Block [line 4]:
+              VarDecl [line 5]: int x [type: int] =
+                Literal [line 5] [type: int]: int 20
+              ExprStmt [line 6]:
+                Assignment [line 6] [type: int]: ASSIGN
+                  target: Identifier [line 6] [type: int]: x
+                  value: Literal [line 6] [type: int]: int 15
+        ExprStmt [line 9]:
+          Assignment [line 9] [type: int]: ASSIGN
+            target: Identifier [line 9] [type: int]: x
+            value: Literal [line 9] [type: int]: int 30
+        WhileStmt [line 11]:
+          condition: Binary [line 11] [type: bool]: LT
+          condition:   left: Identifier [line 11] [type: int]: x
+          condition:   right: Literal [line 11] [type: int]: int 50
+          body:
+            Block [line 11]:
+              VarDecl [line 12]: int y [type: int] =
+                Identifier [line 12] [type: int]: x
+              ExprStmt [line 13]:
+                Assignment [line 13] [type: int]: ASSIGN
+                  target: Identifier [line 13] [type: int]: x
+                  value: Binary [line 13] [type: int]: ADD
+                  value:   left: Identifier [line 13] [type: int]: x
+                  value:   right: Literal [line 13] [type: int]: int 1
+        ForStmt [line 16]:
+          init:
+            VarDecl [line 16]: int i [type: int] =
+              Literal [line 16] [type: int]: int 0
+          condition: Binary [line 16] [type: bool]: LT
+          condition:   left: Identifier [line 16] [type: int]: i
+          condition:   right: Literal [line 16] [type: int]: int 10
+          update: Assignment [line 16] [type: int]: ASSIGN
+          update:   target: Identifier [line 16] [type: int]: i
+          update:   value: Binary [line 16] [type: int]: ADD
+          update:   value:   left: Identifier [line 16] [type: int]: i
+          update:   value:   right: Literal [line 16] [type: int]: int 1
+          body:
+            Block [line 16]:
+              VarDecl [line 17]: int z [type: int] =
+                Identifier [line 17] [type: int]: i
+        ReturnStmt [line 20] [type: int]:
+          Identifier [line 20] [type: int]: x
+
+[Таблица символов]
+Symbol Table:
+Scope 0 [global:global]:
+  test_scopes : fn() -> int [function] -> int at line 1:4
+  Scope 1 [function:test_scopes] (parent: global:global):
+    (no symbols)
+    Scope 2 [block] (parent: function:test_scopes):
+      x : int [variable] at line 2:9
+      Scope 3 [if-then] (parent: block):
+        (no symbols)
+        Scope 4 [block] (parent: if-then):
+          x : int [variable] at line 5:13
+      Scope 5 [while-body] (parent: block):
+        (no symbols)
+        Scope 6 [block] (parent: while-body):
+          y : int [variable] at line 12:13
+      Scope 7 [for-loop] (parent: block):
+        i : int [variable] at line 16:14
+        Scope 8 [for-body] (parent: for-loop):
+          (no symbols)
+          Scope 9 [block] (parent: for-body):
+            z : int [variable] at line 17:13
+

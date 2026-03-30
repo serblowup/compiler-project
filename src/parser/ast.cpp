@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include "../semantic/type.hpp"
 #include <sstream>
 #include <iomanip>
 
@@ -18,7 +19,11 @@ std::string ProgramNode::toString() const {
 
 std::string LiteralExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Literal [line " << line << "]: ";
+    oss << "Literal [line " << line << "]";
+    if (resolvedType) {
+        oss << " [type: " << resolvedType->toString() << "]";
+    }
+    oss << ": ";
     
     switch (type) {
         case TokenType::tkn_INT_LITERAL:
@@ -50,13 +55,21 @@ std::string LiteralExprNode::toString() const {
 
 std::string IdentifierExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Identifier [line " << line << "]: " << name;
+    oss << "Identifier [line " << line << "]";
+    if (resolvedType) {
+        oss << " [type: " << resolvedType->toString() << "]";
+    }
+    oss << ": " << name;
     return oss.str();
 }
 
 std::string BinaryExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Binary [line " << line << "]: " << token_type_to_string(op) << "\n";
+    oss << "Binary [line " << line << "]";
+    if (resolvedType) {
+        oss << " [type: " << resolvedType->toString() << "]";
+    }
+    oss << ": " << token_type_to_string(op) << "\n";
     
     std::string leftStr = left->toString();
     std::istringstream leftIss(leftStr);
@@ -77,7 +90,11 @@ std::string BinaryExprNode::toString() const {
 
 std::string UnaryExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Unary [line " << line << "]: " << token_type_to_string(op) << "\n";
+    oss << "Unary [line " << line << "]";
+    if (resolvedType) {
+        oss << " [type: " << resolvedType->toString() << "]";
+    }
+    oss << ": " << token_type_to_string(op) << "\n";
     
     std::string operandStr = operand->toString();
     std::istringstream iss(operandStr);
@@ -91,7 +108,11 @@ std::string UnaryExprNode::toString() const {
 
 std::string CallExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Call [line " << line << "]:\n";
+    oss << "Call [line " << line << "]";
+    if (resolvedType) {
+        oss << " [type: " << resolvedType->toString() << "]";
+    }
+    oss << ":\n";
     
     std::string calleeStr = callee->toString();
     std::istringstream calleeIss(calleeStr);
@@ -117,7 +138,11 @@ std::string CallExprNode::toString() const {
 
 std::string AssignmentExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Assignment [line " << line << "]: " << token_type_to_string(op) << "\n";
+    oss << "Assignment [line " << line << "]";
+    if (resolvedType) {
+        oss << " [type: " << resolvedType->toString() << "]";
+    }
+    oss << ": " << token_type_to_string(op) << "\n";
     
     std::string targetStr = target->toString();
     std::istringstream targetIss(targetStr);
@@ -265,7 +290,11 @@ std::string ForStmtNode::toString() const {
 
 std::string ReturnStmtNode::toString() const {
     std::ostringstream oss;
-    oss << "ReturnStmt [line " << line << "]:";
+    oss << "ReturnStmt [line " << line << "]";
+    if (value && value->getType()) {
+        oss << " [type: " << value->getType()->toString() << "]";
+    }
+    oss << ":";
     
     if (value) {
         oss << "\n";
@@ -285,6 +314,9 @@ std::string ReturnStmtNode::toString() const {
 std::string VarDeclStmtNode::toString() const {
     std::ostringstream oss;
     oss << "VarDecl [line " << line << "]: " << type << " " << name;
+    if (initializer && initializer->getType()) {
+        oss << " [type: " << initializer->getType()->toString() << "]";
+    }
     
     if (initializer) {
         oss << " =\n";
@@ -309,7 +341,11 @@ std::string ParamNode::toString() const {
 
 std::string FunctionDeclNode::toString() const {
     std::ostringstream oss;
-    oss << "FunctionDecl [line " << line << "]: " << name << " -> " << returnType << "\n";
+    oss << "FunctionDecl [line " << line << "]: " << name << " -> " << returnType;
+    if (body && body->getStatements().empty()) {
+        oss << " [no body]";
+    }
+    oss << "\n";
     
     if (!parameters.empty()) {
         oss << "  parameters:\n";

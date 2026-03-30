@@ -1,0 +1,136 @@
+[Разукрашенное AST]
+Program [line 1]:
+  FunctionDecl [line 1]: check_conditions -> int
+    parameters:
+      Param [line 1]: int x
+    body:
+      Block [line 1]:
+        IfStmt [line 2]:
+          condition: Binary [line 2] [type: bool]: GT
+          condition:   left: Identifier [line 2] [type: int]: x
+          condition:   right: Literal [line 2] [type: int]: int 0
+          then:
+            Block [line 2]:
+              ReturnStmt [line 3] [type: int]:
+                Literal [line 3] [type: int]: int 1
+          else:
+            Block [line 4]:
+              IfStmt [line 5]:
+                condition: Binary [line 5] [type: bool]: LT
+                condition:   left: Identifier [line 5] [type: int]: x
+                condition:   right: Literal [line 5] [type: int]: int 0
+                then:
+                  Block [line 5]:
+                    ReturnStmt [line 6] [type: int]:
+                      Unary [line 6] [type: int]: SUB
+                        Literal [line 6] [type: int]: int 1
+        ReturnStmt [line 9] [type: int]:
+          Literal [line 9] [type: int]: int 0
+  FunctionDecl [line 12]: loop_example -> int
+    parameters:
+      Param [line 12]: int n
+    body:
+      Block [line 12]:
+        VarDecl [line 13]: int sum [type: int] =
+          Literal [line 13] [type: int]: int 0
+        ForStmt [line 15]:
+          init:
+            VarDecl [line 15]: int i [type: int] =
+              Literal [line 15] [type: int]: int 0
+          condition: Binary [line 15] [type: bool]: LT
+          condition:   left: Identifier [line 15] [type: int]: i
+          condition:   right: Identifier [line 15] [type: int]: n
+          update: Assignment [line 15] [type: int]: ASSIGN
+          update:   target: Identifier [line 15] [type: int]: i
+          update:   value: Binary [line 15] [type: int]: ADD
+          update:   value:   left: Identifier [line 15] [type: int]: i
+          update:   value:   right: Literal [line 15] [type: int]: int 1
+          body:
+            Block [line 15]:
+              ExprStmt [line 16]:
+                Assignment [line 16] [type: int]: ASSIGN
+                  target: Identifier [line 16] [type: int]: sum
+                  value: Binary [line 16] [type: int]: ADD
+                  value:   left: Identifier [line 16] [type: int]: sum
+                  value:   right: Identifier [line 16] [type: int]: i
+        VarDecl [line 19]: int i [type: int] =
+          Literal [line 19] [type: int]: int 0
+        WhileStmt [line 20]:
+          condition: Binary [line 20] [type: bool]: LT
+          condition:   left: Identifier [line 20] [type: int]: i
+          condition:   right: Identifier [line 20] [type: int]: n
+          body:
+            Block [line 20]:
+              ExprStmt [line 21]:
+                Assignment [line 21] [type: int]: ASSIGN
+                  target: Identifier [line 21] [type: int]: sum
+                  value: Binary [line 21] [type: int]: ADD
+                  value:   left: Identifier [line 21] [type: int]: sum
+                  value:   right: Identifier [line 21] [type: int]: i
+              ExprStmt [line 22]:
+                Assignment [line 22] [type: int]: ASSIGN
+                  target: Identifier [line 22] [type: int]: i
+                  value: Binary [line 22] [type: int]: ADD
+                  value:   left: Identifier [line 22] [type: int]: i
+                  value:   right: Literal [line 22] [type: int]: int 1
+        ReturnStmt [line 25] [type: int]:
+          Identifier [line 25] [type: int]: sum
+  FunctionDecl [line 28]: main -> int
+    body:
+      Block [line 28]:
+        VarDecl [line 29]: int sign [type: int] =
+          Call [line 29] [type: int]:
+            callee: Identifier [line 29] [type: fn(int) -> int]: check_conditions
+            arguments:
+              Literal [line 29] [type: int]: int 5
+        VarDecl [line 30]: int total [type: int] =
+          Call [line 30] [type: int]:
+            callee: Identifier [line 30] [type: fn(int) -> int]: loop_example
+            arguments:
+              Literal [line 30] [type: int]: int 10
+        ReturnStmt [line 31] [type: int]:
+          Identifier [line 31] [type: int]: total
+
+[Таблица символов]
+Symbol Table:
+Scope 0 [global:global]:
+  main : fn() -> int [function] -> int at line 28:4
+  loop_example : fn(int) -> int [function] -> int (params: n: int) at line 12:4
+  check_conditions : fn(int) -> int [function] -> int (params: x: int) at line 1:4
+  Scope 1 [function:check_conditions] (parent: global:global):
+    x : int [parameter] at line 1:25 [offset: 0, size: 4]
+    Scope 2 [block] (parent: function:check_conditions):
+      (no symbols)
+      Scope 3 [if-then] (parent: block):
+        (no symbols)
+        Scope 4 [block] (parent: if-then):
+          (no symbols)
+      Scope 5 [if-else] (parent: block):
+        (no symbols)
+        Scope 6 [block] (parent: if-else):
+          (no symbols)
+          Scope 7 [if-then] (parent: block):
+            (no symbols)
+            Scope 8 [block] (parent: if-then):
+              (no symbols)
+  Scope 9 [function:loop_example] (parent: global:global):
+    n : int [parameter] at line 12:21 [offset: 0, size: 4]
+    Scope 10 [block] (parent: function:loop_example):
+      i : int [variable] at line 19:9
+      sum : int [variable] at line 13:9
+      Scope 11 [for-loop] (parent: block):
+        i : int [variable] at line 15:14
+        Scope 12 [for-body] (parent: for-loop):
+          (no symbols)
+          Scope 13 [block] (parent: for-body):
+            (no symbols)
+      Scope 14 [while-body] (parent: block):
+        (no symbols)
+        Scope 15 [block] (parent: while-body):
+          (no symbols)
+  Scope 16 [function:main] (parent: global:global):
+    (no symbols)
+    Scope 17 [block] (parent: function:main):
+      total : int [variable] at line 30:9
+      sign : int [variable] at line 29:9
+

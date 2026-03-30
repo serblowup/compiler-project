@@ -1,0 +1,17 @@
+fn add(int a, int b) -> int {
+    return a + b;
+}
+
+fn multiply(float a, float b) -> float {
+    return a * b;
+}
+
+fn main() -> int {
+    int x = 5;
+    int y = 10;
+    
+    int sum = add(x, y);
+    float prod = multiply(3.5, 2.0);
+    
+    return sum;
+}

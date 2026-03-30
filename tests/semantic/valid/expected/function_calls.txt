@@ -1,0 +1,68 @@
+[Разукрашенное AST]
+Program [line 1]:
+  FunctionDecl [line 1]: add -> int
+    parameters:
+      Param [line 1]: int a
+      Param [line 1]: int b
+    body:
+      Block [line 1]:
+        ReturnStmt [line 2] [type: int]:
+          Binary [line 2] [type: int]: ADD
+            left: Identifier [line 2] [type: int]: a
+            right: Identifier [line 2] [type: int]: b
+  FunctionDecl [line 5]: multiply -> float
+    parameters:
+      Param [line 5]: float a
+      Param [line 5]: float b
+    body:
+      Block [line 5]:
+        ReturnStmt [line 6] [type: float]:
+          Binary [line 6] [type: float]: MUL
+            left: Identifier [line 6] [type: float]: a
+            right: Identifier [line 6] [type: float]: b
+  FunctionDecl [line 9]: main -> int
+    body:
+      Block [line 9]:
+        VarDecl [line 10]: int x [type: int] =
+          Literal [line 10] [type: int]: int 5
+        VarDecl [line 11]: int y [type: int] =
+          Literal [line 11] [type: int]: int 10
+        VarDecl [line 13]: int sum [type: int] =
+          Call [line 13] [type: int]:
+            callee: Identifier [line 13] [type: fn(int, int) -> int]: add
+            arguments:
+              Identifier [line 13] [type: int]: x
+              Identifier [line 13] [type: int]: y
+        VarDecl [line 14]: float prod [type: float] =
+          Call [line 14] [type: float]:
+            callee: Identifier [line 14] [type: fn(float, float) -> float]: multiply
+            arguments:
+              Literal [line 14] [type: float]: float 3.500000
+              Literal [line 14] [type: float]: float 2.000000
+        ReturnStmt [line 16] [type: int]:
+          Identifier [line 16] [type: int]: sum
+
+[Таблица символов]
+Symbol Table:
+Scope 0 [global:global]:
+  main : fn() -> int [function] -> int at line 9:4
+  multiply : fn(float, float) -> float [function] -> float (params: a: float, b: float) at line 5:4
+  add : fn(int, int) -> int [function] -> int (params: a: int, b: int) at line 1:4
+  Scope 1 [function:add] (parent: global:global):
+    b : int [parameter] at line 1:19 [offset: 4, size: 4]
+    a : int [parameter] at line 1:12 [offset: 0, size: 4]
+    Scope 2 [block] (parent: function:add):
+      (no symbols)
+  Scope 3 [function:multiply] (parent: global:global):
+    b : float [parameter] at line 5:28 [offset: 4, size: 4]
+    a : float [parameter] at line 5:19 [offset: 0, size: 4]
+    Scope 4 [block] (parent: function:multiply):
+      (no symbols)
+  Scope 5 [function:main] (parent: global:global):
+    (no symbols)
+    Scope 6 [block] (parent: function:main):
+      prod : float [variable] at line 14:11
+      sum : int [variable] at line 13:9
+      y : int [variable] at line 11:9
+      x : int [variable] at line 10:9
+

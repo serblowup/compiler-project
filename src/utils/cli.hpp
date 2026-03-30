@@ -16,6 +16,10 @@ struct CommandLineOptions {
     bool help_requested;
     int max_errors;
     
+    bool dump_symbols;
+    bool show_types;
+    std::string symbol_format;
+    
     CommandLineOptions() 
         : command(""), 
           input_file(""), 
@@ -25,7 +29,10 @@ struct CommandLineOptions {
           defines(), 
           verbose(false), 
           help_requested(false),
-          max_errors(100) {}
+          max_errors(100),
+          dump_symbols(false),
+          show_types(false),
+          symbol_format("text") {}
 };
 
 class CLI {

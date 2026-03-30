@@ -1,4 +1,4 @@
-fn main() -> void {
+fn main() -> int {
     int n = 5;
     int result = 1;
 

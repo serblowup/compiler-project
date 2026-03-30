@@ -1,7 +1,9 @@
 #include "ast_visualizer.hpp"
+#include "../semantic/type.hpp"
 #include <iomanip>
 #include <stack>
 #include <map>
+#include <sstream>
 
 // Pretty Printer
 std::string PrettyPrinter::visualize(const ProgramNode* program) {
@@ -12,6 +14,25 @@ std::string PrettyPrinter::visualize(const ProgramNode* program) {
 // DOT
 std::string DOTPrinter::generateNodeId() {
     return "node" + std::to_string(nodeCounter++);
+}
+
+std::string DOTPrinter::escapeDOT(const std::string& str) {
+    std::string result;
+    for (char c : str) {
+        switch (c) {
+            case '"': result += "\\\""; break;
+            case '\\': result += "\\\\"; break;
+            case '[': result += "\\["; break;
+            case ']': result += "\\]"; break;
+            case '{': result += "\\{"; break;
+            case '}': result += "\\}"; break;
+            case '<': result += "\\<"; break;
+            case '>': result += "\\>"; break;
+            case '|': result += "\\|"; break;
+            default: result += c;
+        }
+    }
+    return result;
 }
 
 std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
@@ -45,10 +66,16 @@ std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
     } else if (auto bin = dynamic_cast<const BinaryExprNode*>(node)) {
         color = "thistle";
         label = std::string(token_type_to_string(bin->getOperator()));
+        if (bin->getType()) {
+            label += "\\n[" + bin->getType()->toString() + "]";
+        }
         shape = "ellipse";
     } else if (auto un = dynamic_cast<const UnaryExprNode*>(node)) {
         color = "thistle";
         label = std::string(token_type_to_string(un->getOperator()));
+        if (un->getType()) {
+            label += "\\n[" + un->getType()->toString() + "]";
+        }
         shape = "ellipse";
     } else if (auto lit = dynamic_cast<const LiteralExprNode*>(node)) {
         color = "wheat";
@@ -65,50 +92,55 @@ std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
         } else {
             label = "Literal";
         }
+        if (lit->ExpressionNode::getType()) {
+            label += "\\n[" + lit->ExpressionNode::getType()->toString() + "]";
+        }
         shape = "ellipse";
     } else if (auto id = dynamic_cast<const IdentifierExprNode*>(node)) {
         color = "wheat";
         label = id->getName();
+        if (id->getType()) {
+            label += "\\n[" + id->getType()->toString() + "]";
+        }
         shape = "ellipse";
     } else if (auto call = dynamic_cast<const CallExprNode*>(node)) {
         color = "thistle";
         label = "Call";
+        if (call->getType()) {
+            label += "\\n[" + call->getType()->toString() + "]";
+        }
         shape = "ellipse";
-        (void)call;
     } else if (auto assign = dynamic_cast<const AssignmentExprNode*>(node)) {
         color = "thistle";
         label = std::string(token_type_to_string(assign->getOperator()));
+        if (assign->getType()) {
+            label += "\\n[" + assign->getType()->toString() + "]";
+        }
         shape = "ellipse";
-    } else if (auto ifStmt = dynamic_cast<const IfStmtNode*>(node)) {
+    } else if (dynamic_cast<const IfStmtNode*>(node)) {
         color = "lightpink";
         label = "If";
         shape = "box";
-        (void)ifStmt;
-    } else if (auto whileStmt = dynamic_cast<const WhileStmtNode*>(node)) {
+    } else if (dynamic_cast<const WhileStmtNode*>(node)) {
         color = "lightpink";
         label = "While";
         shape = "box";
-        (void)whileStmt;
-    } else if (auto forStmt = dynamic_cast<const ForStmtNode*>(node)) {
+    } else if (dynamic_cast<const ForStmtNode*>(node)) {
         color = "lightpink";
         label = "For";
         shape = "box";
-        (void)forStmt;
-    } else if (auto returnStmt = dynamic_cast<const ReturnStmtNode*>(node)) {
+    } else if (dynamic_cast<const ReturnStmtNode*>(node)) {
         color = "lightpink";
         label = "Return";
         shape = "box";
-        (void)returnStmt;
-    } else if (auto block = dynamic_cast<const BlockStmtNode*>(node)) {
+    } else if (dynamic_cast<const BlockStmtNode*>(node)) {
         color = "lightgray";
         label = "Block";
         shape = "box";
-        (void)block;
-    } else if (auto exprStmt = dynamic_cast<const ExprStmtNode*>(node)) {
+    } else if (dynamic_cast<const ExprStmtNode*>(node)) {
         color = "lightgray";
         label = "ExprStmt";
         shape = "box";
-        (void)exprStmt;
     } else if (auto param = dynamic_cast<const ParamNode*>(node)) {
         color = "lightsalmon";
         label = param->getType() + " " + param->getName();
@@ -118,7 +150,7 @@ std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
         shape = "box";
     }
     
-    out << "  " << nodeId << " [label=\"" << label << "\", shape=" << shape 
+    out << "  " << nodeId << " [label=\"" << escapeDOT(label) << "\", shape=" << shape 
         << ", style=filled, fillcolor=" << color << "];\n";
     
     if (auto program = dynamic_cast<const ProgramNode*>(node)) {
@@ -417,6 +449,9 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"line\": " << bin->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << bin->getColumn() << ",\n";
         out << indentStr2 << "\"operator\": \"" << token_type_to_string(bin->getOperator()) << "\",\n";
+        if (bin->getType()) {
+            out << indentStr2 << "\"resultType\": \"" << escapeJSON(bin->getType()->toString()) << "\",\n";
+        }
         out << indentStr2 << "\"left\": ";
         visitNode(bin->getLeft(), out, indent + 2);
         out << ",\n";
@@ -428,6 +463,9 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"line\": " << un->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << un->getColumn() << ",\n";
         out << indentStr2 << "\"operator\": \"" << token_type_to_string(un->getOperator()) << "\",\n";
+        if (un->getType()) {
+            out << indentStr2 << "\"resultType\": \"" << escapeJSON(un->getType()->toString()) << "\",\n";
+        }
         out << indentStr2 << "\"operand\": ";
         visitNode(un->getOperand(), out, indent + 2);
         out << "\n";
@@ -436,6 +474,9 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"line\": " << assign->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << assign->getColumn() << ",\n";
         out << indentStr2 << "\"operator\": \"" << token_type_to_string(assign->getOperator()) << "\",\n";
+        if (assign->getType()) {
+            out << indentStr2 << "\"resultType\": \"" << escapeJSON(assign->getType()->toString()) << "\",\n";
+        }
         out << indentStr2 << "\"target\": ";
         visitNode(assign->getTarget(), out, indent + 2);
         out << ",\n";
@@ -446,6 +487,9 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"type\": \"Call\",\n";
         out << indentStr2 << "\"line\": " << call->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << call->getColumn() << ",\n";
+        if (call->getType()) {
+            out << indentStr2 << "\"resultType\": \"" << escapeJSON(call->getType()->toString()) << "\",\n";
+        }
         out << indentStr2 << "\"callee\": ";
         visitNode(call->getCallee(), out, indent + 2);
         out << ",\n";
@@ -460,11 +504,18 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
         out << indentStr2 << "\"type\": \"Identifier\",\n";
         out << indentStr2 << "\"line\": " << id->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << id->getColumn() << ",\n";
-        out << indentStr2 << "\"name\": \"" << escapeJSON(id->getName()) << "\"\n";
+        out << indentStr2 << "\"name\": \"" << escapeJSON(id->getName()) << "\"";
+        if (id->getType()) {
+            out << ",\n" << indentStr2 << "\"exprType\": \"" << escapeJSON(id->getType()->toString()) << "\"";
+        }
+        out << "\n";
     } else if (auto lit = dynamic_cast<const LiteralExprNode*>(node)) {
         out << indentStr2 << "\"type\": \"Literal\",\n";
         out << indentStr2 << "\"line\": " << lit->getLine() << ",\n";
         out << indentStr2 << "\"column\": " << lit->getColumn() << ",\n";
+        if (lit->ExpressionNode::getType()) {
+            out << indentStr2 << "\"valueType\": \"" << escapeJSON(lit->ExpressionNode::getType()->toString()) << "\",\n";
+        }
         out << indentStr2 << "\"value\": ";
         
         if (auto intVal = lit->getValue<int>()) {

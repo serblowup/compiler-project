@@ -29,6 +29,7 @@ class DOTPrinter : public ASTVisualizer {
 private:
     int nodeCounter;
     std::string generateNodeId();
+    std::string escapeDOT(const std::string& str);
     std::string visitNode(const ASTNode* node, std::ostream& out);
     
 public:

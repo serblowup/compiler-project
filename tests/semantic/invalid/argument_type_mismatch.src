@@ -1,0 +1,8 @@
+fn add(int a, int b) -> int {
+    return a + b;
+}
+
+fn main() -> int {
+    int result = add(3.14, 5);
+    return 0;
+}

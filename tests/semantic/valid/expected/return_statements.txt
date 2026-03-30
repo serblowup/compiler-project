@@ -1,0 +1,59 @@
+[Разукрашенное AST]
+Program [line 1]:
+  FunctionDecl [line 1]: void_function -> void
+    body:
+      Block [line 1]:
+        ReturnStmt [line 2]: void
+  FunctionDecl [line 5]: int_function -> int
+    parameters:
+      Param [line 5]: int x
+    body:
+      Block [line 5]:
+        IfStmt [line 6]:
+          condition: Binary [line 6] [type: bool]: GT
+          condition:   left: Identifier [line 6] [type: int]: x
+          condition:   right: Literal [line 6] [type: int]: int 0
+          then:
+            Block [line 6]:
+              ReturnStmt [line 7] [type: int]:
+                Identifier [line 7] [type: int]: x
+        ReturnStmt [line 9] [type: int]:
+          Unary [line 9] [type: int]: SUB
+            Identifier [line 9] [type: int]: x
+  FunctionDecl [line 12]: main -> int
+    body:
+      Block [line 12]:
+        ExprStmt [line 13]:
+          Call [line 13] [type: void]:
+            callee: Identifier [line 13] [type: fn() -> void]: void_function
+        VarDecl [line 14]: int result [type: int] =
+          Call [line 14] [type: int]:
+            callee: Identifier [line 14] [type: fn(int) -> int]: int_function
+            arguments:
+              Literal [line 14] [type: int]: int 42
+        ReturnStmt [line 15] [type: int]:
+          Identifier [line 15] [type: int]: result
+
+[Таблица символов]
+Symbol Table:
+Scope 0 [global:global]:
+  main : fn() -> int [function] -> int at line 12:4
+  int_function : fn(int) -> int [function] -> int (params: x: int) at line 5:4
+  void_function : fn() -> void [function] -> void at line 1:4
+  Scope 1 [function:void_function] (parent: global:global):
+    (no symbols)
+    Scope 2 [block] (parent: function:void_function):
+      (no symbols)
+  Scope 3 [function:int_function] (parent: global:global):
+    x : int [parameter] at line 5:21 [offset: 0, size: 4]
+    Scope 4 [block] (parent: function:int_function):
+      (no symbols)
+      Scope 5 [if-then] (parent: block):
+        (no symbols)
+        Scope 6 [block] (parent: if-then):
+          (no symbols)
+  Scope 7 [function:main] (parent: global:global):
+    (no symbols)
+    Scope 8 [block] (parent: function:main):
+      result : int [variable] at line 14:9
+

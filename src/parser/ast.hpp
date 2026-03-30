@@ -8,6 +8,11 @@
 #include <optional>
 #include "../lexer/tokens.hpp"
 
+namespace semantic {
+    class Type;
+    struct SymbolInfo;
+}
+
 class ASTVisitor;
 class ConstASTVisitor;
 
@@ -29,9 +34,19 @@ public:
 };
 
 class ExpressionNode : public ASTNode {
+protected:
+    semantic::Type* resolvedType;
+    
 public:
-    using ASTNode::ASTNode;
+    ExpressionNode(int line, int column) 
+        : ASTNode(line, column), resolvedType(nullptr) {}
     virtual ~ExpressionNode() = default;
+    
+    semantic::Type* getType() const { return resolvedType; }
+    
+    void setType(semantic::Type* type) { resolvedType = type; }
+    
+    bool hasType() const { return resolvedType != nullptr; }
 };
 
 class StatementNode : public ASTNode {
@@ -99,12 +114,20 @@ public:
 
 class IdentifierExprNode : public ExpressionNode {
     std::string name;
+    semantic::SymbolInfo* symbol;
     
 public:
     IdentifierExprNode(int line, int column, const std::string& name)
-        : ExpressionNode(line, column), name(name) {}
+        : ExpressionNode(line, column), name(name), symbol(nullptr) {}
     
     const std::string& getName() const { return name; }
+    
+    semantic::SymbolInfo* getSymbol() const { return symbol; }
+    
+    void setSymbol(semantic::SymbolInfo* sym) { symbol = sym; }
+    
+    bool hasSymbol() const { return symbol != nullptr; }
+    
     std::string toString() const override;
     void accept(ASTVisitor* visitor) override;
     void accept(ConstASTVisitor* visitor) const override;
@@ -122,8 +145,10 @@ public:
                    std::unique_ptr<ExpressionNode> right)
         : ExpressionNode(line, column), left(std::move(left)), op(op), right(std::move(right)) {}
     
+    ExpressionNode* getLeft() { return left.get(); }
     const ExpressionNode* getLeft() const { return left.get(); }
     TokenType getOperator() const { return op; }
+    ExpressionNode* getRight() { return right.get(); }
     const ExpressionNode* getRight() const { return right.get(); }
     
     std::string toString() const override;
@@ -140,6 +165,7 @@ public:
         : ExpressionNode(line, column), op(op), operand(std::move(operand)) {}
     
     TokenType getOperator() const { return op; }
+    ExpressionNode* getOperand() { return operand.get(); }
     const ExpressionNode* getOperand() const { return operand.get(); }
     
     std::string toString() const override;
@@ -150,19 +176,25 @@ public:
 class CallExprNode : public ExpressionNode {
     std::unique_ptr<ExpressionNode> callee;
     std::vector<std::unique_ptr<ExpressionNode>> arguments;
+    semantic::SymbolInfo* functionSymbol;
     
 public:
     CallExprNode(int line, int column, std::unique_ptr<ExpressionNode> callee)
-        : ExpressionNode(line, column), callee(std::move(callee)) {}
+        : ExpressionNode(line, column), callee(std::move(callee)), functionSymbol(nullptr) {}
     
     void addArgument(std::unique_ptr<ExpressionNode> arg) {
         arguments.push_back(std::move(arg));
     }
     
+    ExpressionNode* getCallee() { return callee.get(); }
     const ExpressionNode* getCallee() const { return callee.get(); }
     const std::vector<std::unique_ptr<ExpressionNode>>& getArguments() const {
         return arguments;
     }
+    
+    semantic::SymbolInfo* getFunctionSymbol() const { return functionSymbol; }
+    
+    void setFunctionSymbol(semantic::SymbolInfo* sym) { functionSymbol = sym; }
     
     std::string toString() const override;
     void accept(ASTVisitor* visitor) override;
@@ -181,8 +213,10 @@ public:
                        std::unique_ptr<ExpressionNode> value)
         : ExpressionNode(line, column), target(std::move(target)), op(op), value(std::move(value)) {}
     
+    ExpressionNode* getTarget() { return target.get(); }
     const ExpressionNode* getTarget() const { return target.get(); }
     TokenType getOperator() const { return op; }
+    ExpressionNode* getValue() { return value.get(); }
     const ExpressionNode* getValue() const { return value.get(); }
     
     std::string toString() const override;
@@ -216,7 +250,9 @@ public:
     ExprStmtNode(int line, int column, std::unique_ptr<ExpressionNode> expr)
         : StatementNode(line, column), expression(std::move(expr)) {}
     
+    ExpressionNode* getExpression() { return expression.get(); }
     const ExpressionNode* getExpression() const { return expression.get(); }
+    
     std::string toString() const override;
     void accept(ASTVisitor* visitor) override;
     void accept(ConstASTVisitor* visitor) const override;
@@ -237,8 +273,11 @@ public:
           thenBranch(std::move(thenBranch)),
           elseBranch(std::move(elseBranch)) {}
     
+    ExpressionNode* getCondition() { return condition.get(); }
     const ExpressionNode* getCondition() const { return condition.get(); }
+    StatementNode* getThenBranch() { return thenBranch.get(); }
     const StatementNode* getThenBranch() const { return thenBranch.get(); }
+    StatementNode* getElseBranch() { return elseBranch.get(); }
     const StatementNode* getElseBranch() const { return elseBranch.get(); }
     bool hasElse() const { return elseBranch != nullptr; }
     
@@ -257,7 +296,9 @@ public:
                   std::unique_ptr<StatementNode> body)
         : StatementNode(line, column), condition(std::move(condition)), body(std::move(body)) {}
     
+    ExpressionNode* getCondition() { return condition.get(); }
     const ExpressionNode* getCondition() const { return condition.get(); }
+    StatementNode* getBody() { return body.get(); }
     const StatementNode* getBody() const { return body.get(); }
     
     std::string toString() const override;
@@ -283,9 +324,13 @@ public:
           update(std::move(update)),
           body(std::move(body)) {}
     
+    StatementNode* getInit() { return init.get(); }
     const StatementNode* getInit() const { return init.get(); }
+    ExpressionNode* getCondition() { return condition.get(); }
     const ExpressionNode* getCondition() const { return condition.get(); }
+    ExpressionNode* getUpdate() { return update.get(); }
     const ExpressionNode* getUpdate() const { return update.get(); }
+    StatementNode* getBody() { return body.get(); }
     const StatementNode* getBody() const { return body.get(); }
     
     bool hasInit() const { return init != nullptr; }
@@ -304,6 +349,7 @@ public:
     ReturnStmtNode(int line, int column, std::unique_ptr<ExpressionNode> value = nullptr)
         : StatementNode(line, column), value(std::move(value)) {}
     
+    ExpressionNode* getValue() { return value.get(); }
     const ExpressionNode* getValue() const { return value.get(); }
     bool hasValue() const { return value != nullptr; }
     
@@ -326,6 +372,7 @@ public:
     
     const std::string& getType() const { return type; }
     const std::string& getName() const { return name; }
+    ExpressionNode* getInitializer() { return initializer.get(); }
     const ExpressionNode* getInitializer() const { return initializer.get(); }
     bool hasInitializer() const { return initializer != nullptr; }
     
@@ -372,6 +419,7 @@ public:
     const std::vector<std::unique_ptr<ParamNode>>& getParameters() const {
         return parameters;
     }
+    BlockStmtNode* getBody() { return body.get(); }
     const BlockStmtNode* getBody() const { return body.get(); }
     
     std::string toString() const override;
