@@ -33,7 +33,10 @@ make test-preproc
 # Запуск только тестов парсера
 make test-parser
 
-# Запуск интеграционных тестов (спринт 2)
+# Запуск семантических тестов
+make test-semantic
+
+# Запуск интеграционных тестов
 make test-integration
 
 # Отчет о покрытии кода (coverage)
@@ -41,18 +44,23 @@ make coverage
 ```
 
 ### Использование
+
+#### Команды лексера и препроцессора
 ```bash
 # Запуск лексера
 ./compiler lex --input <файл> --output <файл>
 
 # Запуск только препроцессора
 ./compiler preprocess --input <файл> --output <файл>
+```
 
+#### Команды парсера
+```bash
 # Запуск парсера
 ./compiler parse --input <файл> --output <файл> [опции]
 ```
 
-#### Опции парсера
+##### Опции парсера
 
 | Опция | Описание |
 |-------|----------|
@@ -60,14 +68,36 @@ make coverage
 | `--verbose` | Подробный вывод процесса разбора |
 | `--max-errors <число>` | Максимальное количество ошибок (по умолчанию - 100) |
 
-#### Примеры
+#### Команды семантического анализа (спринт 3)
+```bash
+# Запуск семантического анализа
+./compiler check --input <файл> --output <файл> [опции]
+```
+
+##### Опции семантического анализа
+
+| Опция | Описание |
+|-------|----------|
+| `--format txt/dot/json` | Формат вывода AST (по умолчанию - txt) |
+| `--dump-symbols` | Вывести таблицу символов |
+| `--show-types` | Показать аннотации типов в AST |
+| `--symbol-format text/json` | Формат вывода таблицы символов (по умолчанию - txt) |
+| `--verbose` | Подробный вывод (включает отчёт о валидации) |
+| `--max-errors <число>` | Максимальное количество ошибок (по умолчанию - 100) |
+
+### Примеры
+
+#### Лексер и препроцессор
 ```bash
 # Лексический анализ
 ./compiler lex --input examples/hello.src --output tokens.txt
 
 # Только препроцессор
 ./compiler preprocess --input examples/hello.src --output hello_srs.txt
+```
 
+#### Парсер
+```bash
 # Парсер выводит AST в текстовом формате
 ./compiler parse --input examples/factorial.src --output ast.txt
 
@@ -84,6 +114,24 @@ dot -Tpng ast.dot -o ast.png
 ./compiler parse --input examples/hello.src --verbose --max-errors 50 --output ast.txt
 ```
 
+#### Семантический анализ
+```bash
+# Семантический анализ
+./compiler check --input examples/factorial.src --output result.txt
+
+# Анализ с таблицей символов
+./compiler check --input examples/factorial.src --output result.txt --dump-symbols
+
+# Анализ с аннотациями типов
+./compiler check --input examples/factorial.src --output result.txt --show-types
+
+# Полный вывод
+./compiler check --input examples/factorial.src --output result.txt --dump-symbols --show-types --verbose
+
+# Таблица символов в JSON формате
+./compiler check --input examples/factorial.src --dump-symbols --symbol-format json --output symbols.json
+```
+
 #### Спецификация языка
 
 Лексическая грамматика описана в файле docs/language_spec.md.
@@ -92,15 +140,21 @@ dot -Tpng ast.dot -o ast.png
 
 LL(1)-грамматика языка описана в файле docs/grammar.md.
 
+#### Семантический анализ
+
+Описание семантического анализа находится в файле docs/semantic.md.
+
 ##### Структура проекта
 
 ```
-compiler_project/
+compiler-project/
 ├── docs # Документация
 │   ├── grammar.md
-│   └── language_spec.md
+│   ├── language_spec.md
+│   └── semantic.md
 ├── examples # Примеры исходного кода
 │   ├── factorial.src
+│   ├── fibonacci.src
 │   └── hello.src
 ├── Makefile # Makefile
 ├── README.md # Readme
@@ -123,6 +177,14 @@ compiler_project/
 │   ├── preprocessor # Препроцессор
 │   │   ├── preprocessor.cpp
 │   │   └── preprocessor.hpp
+│   ├── semantic # Семантический анализ
+│   │   ├── semantic_analyzer.cpp
+│   │   ├── semantic_analyzer.hpp
+│   │   ├── semantic_error.hpp
+│   │   ├── symbol.hpp
+│   │   ├── symbol_table.hpp
+│   │   ├── type_checker.hpp
+│   │   └── type.hpp
 │   └── utils # Вспомогательные утилиты
 │       ├── cli.cpp
 │       ├── cli.hpp
@@ -246,11 +308,57 @@ compiler_project/
     │       ├── expected
     │       │   └── test_define.txt
     │       └── test_define.src
-    └── scripts
-        ├── check_coverage.sh
-        ├── run_all_tests.sh
-        ├── test_integration.sh
-        ├── test_lexer.sh
-        ├── test_parser.sh
-        └── test_preprocessor.sh
+    ├── scripts
+    │   ├── check_coverage.sh
+    │   ├── run_all_tests.sh
+    │   ├── test_integration.sh
+    │   ├── test_lexer.sh
+    │   ├── test_parser.sh
+    │   ├── test_preprocessor.sh
+    │   └── test_semantic.sh
+    └── semantic # Тесты семантического анализа
+        ├── invalid
+        │   ├── argument_count_mismatch.src
+        │   ├── argument_type_mismatch.src
+        │   ├── duplicate_function.src
+        │   ├── duplicate_variable.src
+        │   ├── expected
+        │   │   ├── argument_count_mismatch.txt
+        │   │   ├── argument_type_mismatch.txt
+        │   │   ├── duplicate_function.txt
+        │   │   ├── duplicate_variable.txt
+        │   │   ├── return_in_void.txt
+        │   │   ├── scope_error.txt
+        │   │   ├── struct_duplicate_field.txt
+        │   │   ├── struct_self_reference.txt
+        │   │   ├── struct_undeclared_type.txt
+        │   │   ├── type_mismatch_assign.txt
+        │   │   ├── type_mismatch_return.txt
+        │   │   ├── undeclared_variable.txt
+        │   │   ├── void_variable.txt
+        │   │   └── wrong_operator_types.txt
+        │   ├── return_in_void.src
+        │   ├── scope_error.src
+        │   ├── struct_duplicate_field.src
+        │   ├── struct_self_reference.src
+        │   ├── struct_undeclared_type.src
+        │   ├── type_mismatch_assign.src
+        │   ├── type_mismatch_return.src
+        │   ├── undeclared_variable.src
+        │   ├── void_variable.src
+        │   └── wrong_operator_types.src
+        └── valid
+            ├── complex_expressions.src
+            ├── control_flow.src
+            ├── expected
+            │   ├── complex_expressions.txt
+            │   ├── control_flow.txt
+            │   ├── function_calls.txt
+            │   ├── nested_scopes.txt
+            │   ├── return_statements.txt
+            │   └── type_compatibility.txt
+            ├── function_calls.src
+            ├── nested_scopes.src
+            ├── return_statements.src
+            └── type_compatibility.src
 ```
