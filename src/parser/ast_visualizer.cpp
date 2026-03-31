@@ -67,14 +67,14 @@ std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
         color = "thistle";
         label = std::string(token_type_to_string(bin->getOperator()));
         if (bin->getType()) {
-            label += "\\n[" + bin->getType()->toString() + "]";
+            label += "\\n(" + bin->getType()->toString() + ")";
         }
         shape = "ellipse";
     } else if (auto un = dynamic_cast<const UnaryExprNode*>(node)) {
         color = "thistle";
         label = std::string(token_type_to_string(un->getOperator()));
         if (un->getType()) {
-            label += "\\n[" + un->getType()->toString() + "]";
+            label += "\\n(" + un->getType()->toString() + ")";
         }
         shape = "ellipse";
     } else if (auto lit = dynamic_cast<const LiteralExprNode*>(node)) {
@@ -93,28 +93,41 @@ std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
             label = "Literal";
         }
         if (lit->ExpressionNode::getType()) {
-            label += "\\n[" + lit->ExpressionNode::getType()->toString() + "]";
+            label += "\\n(" + lit->ExpressionNode::getType()->toString() + ")";
         }
         shape = "ellipse";
     } else if (auto id = dynamic_cast<const IdentifierExprNode*>(node)) {
         color = "wheat";
         label = id->getName();
         if (id->getType()) {
-            label += "\\n[" + id->getType()->toString() + "]";
+            std::string typeStr = id->getType()->toString();
+            if (id->getType()->isFunction()) {
+                auto funcInfo = id->getType()->getFunctionInfo();
+                if (funcInfo) {
+                    typeStr = "fn(";
+                    for (size_t i = 0; i < funcInfo->getParameterCount(); ++i) {
+                        if (i > 0) typeStr += ", ";
+                        typeStr += funcInfo->getParameterType(i)->toString();
+                    }
+                    typeStr += ") -> ";
+                    typeStr += funcInfo->returnType ? funcInfo->returnType->toString() : "void";
+                }
+            }
+            label += "\\n(" + typeStr + ")";
         }
         shape = "ellipse";
     } else if (auto call = dynamic_cast<const CallExprNode*>(node)) {
         color = "thistle";
         label = "Call";
         if (call->getType()) {
-            label += "\\n[" + call->getType()->toString() + "]";
+            label += "\\n(" + call->getType()->toString() + ")";
         }
         shape = "ellipse";
     } else if (auto assign = dynamic_cast<const AssignmentExprNode*>(node)) {
         color = "thistle";
         label = std::string(token_type_to_string(assign->getOperator()));
         if (assign->getType()) {
-            label += "\\n[" + assign->getType()->toString() + "]";
+            label += "\\n(" + assign->getType()->toString() + ")";
         }
         shape = "ellipse";
     } else if (dynamic_cast<const IfStmtNode*>(node)) {

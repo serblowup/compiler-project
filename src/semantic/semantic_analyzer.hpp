@@ -41,6 +41,15 @@ namespace semantic {
             std::vector<std::tuple<std::string, std::string, int, int>> variables; // name, type, offset, size
         };
         std::vector<MemoryLayoutInfo> memoryLayouts;
+        
+        struct TypeStats {
+            int totalExpressions = 0;
+            int typedExpressions = 0;
+            int errorTypes = 0;
+            std::map<std::string, int> typeDistribution;
+        } typeStats;
+        
+        void recordType(Type* type);
 
         void reportError(int line, int column, SemanticErrorCode code, const std::string& message);
         void reportTypeMismatch(int line, int column, Type* expected, Type* actual, const std::string& context = "");

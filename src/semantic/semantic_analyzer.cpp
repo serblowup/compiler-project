@@ -50,6 +50,7 @@ namespace semantic {
         inLoop = false;
         inFunctionBody = false;
         memoryLayouts.clear();
+        typeStats = TypeStats();
     }
 
     std::string SemanticAnalyzer::getContextLine(int line) {
@@ -148,6 +149,36 @@ namespace semantic {
 
     void SemanticAnalyzer::annotateNode(ExpressionNode* node, Type* type) {
         node->setType(type);
+        recordType(type);
+    }
+    
+    void SemanticAnalyzer::recordType(Type* type) {
+        typeStats.totalExpressions++;
+        
+        if (!type) {
+            return;
+        }
+        
+        typeStats.typedExpressions++;
+        
+        if (type->isError()) {
+            typeStats.errorTypes++;
+        }
+        
+        std::string typeName;
+        switch (type->getKind()) {
+            case TypeKind::INT: typeName = "int"; break;
+            case TypeKind::FLOAT: typeName = "float"; break;
+            case TypeKind::BOOL: typeName = "bool"; break;
+            case TypeKind::VOID: typeName = "void"; break;
+            case TypeKind::STRING: typeName = "string"; break;
+            case TypeKind::STRUCT: typeName = "struct"; break;
+            case TypeKind::FUNCTION: typeName = "function"; break;
+            case TypeKind::ERROR: typeName = "error"; break;
+            default: typeName = "unknown";
+        }
+        
+        typeStats.typeDistribution[typeName]++;
     }
 
     Type* SemanticAnalyzer::resolveIdentifier(IdentifierExprNode* node) {
@@ -919,18 +950,14 @@ namespace semantic {
 
     SemanticAnalyzer::TypeStatistics SemanticAnalyzer::getTypeStatistics() const {
         TypeStatistics stats;
-        stats.totalExpressions = 0;
-        stats.typedExpressions = 0;
-        stats.errorTypes = 0;
         
-        stats.typeDistribution["int"] = 0;
-        stats.typeDistribution["float"] = 0;
-        stats.typeDistribution["bool"] = 0;
-        stats.typeDistribution["string"] = 0;
-        stats.typeDistribution["void"] = 0;
-        stats.typeDistribution["struct"] = 0;
-        stats.typeDistribution["function"] = 0;
-        stats.typeDistribution["error"] = 0;
+        stats.totalExpressions = typeStats.totalExpressions;
+        stats.typedExpressions = typeStats.typedExpressions;
+        stats.errorTypes = typeStats.errorTypes;
+        
+        for (const auto& [typeName, count] : typeStats.typeDistribution) {
+            stats.typeDistribution[typeName] = count;
+        }
         
         return stats;
     }
