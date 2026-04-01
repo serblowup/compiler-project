@@ -1,23 +1,17 @@
 semantic error: несоответствие типов - несоответствие типов в бинарной операции
   --> tests/semantic/invalid/wrong_operator_types.src:5:13
-   |
-5 |     int y = b + x;
-   |             ^
-   |
+5  int y = b + x;
+           ^
 
 semantic error: несоответствие типов - несоответствие типов в бинарной операции
   --> tests/semantic/invalid/wrong_operator_types.src:7:14
-   |
-7 |     bool c = x && b;
-   |              ^
-   |
+7  bool c = x && b;
+            ^
 
 semantic error: несоответствие типов - несоответствие типов в присваивании
   --> tests/semantic/invalid/wrong_operator_types.src:10:5
-   |
-10 |     x = f % x;
-   |     ^
-   |
+10  x = f % x;
+   ^
    = ожидалось: int
    = получено: float
    = подсказка: используйте явное преобразование: (int)значение

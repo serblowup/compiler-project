@@ -189,12 +189,28 @@ struct SemanticError {
         }
         
         oss << "\n  --> " << filename << ":" << line << ":" << column << "\n";
-        oss << "   |\n";
         
         if (!context_line.empty()) {
-            oss << line << " | " << context_line << "\n";
-            oss << "   | " << pointer_line << "\n";
-            oss << "   |\n";
+            // Обрезаем начальные пробелы для красивого вывода
+            size_t start = context_line.find_first_not_of(" \t");
+            std::string display_line;
+            int offset = 0;
+            
+            if (start != std::string::npos) {
+                display_line = context_line.substr(start);
+                offset = static_cast<int>(start);
+            } else {
+                display_line = context_line;
+            }
+            
+            // Корректируем указатель с учетом обрезанных пробелов
+            int adjusted_column = column - offset;
+            if (adjusted_column < 1) adjusted_column = 1;
+            std::string adjusted_pointer = std::string(adjusted_column - 1, ' ') + "^";
+            
+            // Выводим строку кода без палок
+            oss << line << "  " << display_line << "\n";
+            oss << "   " << adjusted_pointer << "\n";
         }
         
         if (expectedType || actualType) {
@@ -222,7 +238,6 @@ struct SemanticError {
     
     void setContext(const std::string& lineContent, int errorColumn) {
         context_line = lineContent;
-        
         pointer_line = std::string(errorColumn - 1, ' ') + "^";
     }
     
