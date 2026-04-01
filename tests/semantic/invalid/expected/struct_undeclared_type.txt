@@ -1,6 +1,6 @@
 semantic error: необъявленный идентификатор - тип 'UnknownType' не объявлен
   --> tests/semantic/invalid/struct_undeclared_type.src:3:17
-3  UnknownType y;
-               ^
+3      UnknownType y;
+                   ^
    = подсказка: проверьте, объявлена ли переменная '' в текущей области видимости
 

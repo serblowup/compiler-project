@@ -98,14 +98,6 @@ inline std::string errorCodeToString(SemanticErrorCode code) {
 }
 
 struct SemanticError {
-    /* Структура семантической ошибки:
-    * - имя файла 
-    * - номер строки
-    * - код ошибки
-    * - сообщение об ошибке
-    * - строка с контекстом
-    * - указатель на ошибку в строке
-    */
     std::string filename;
     int line;
     int column;
@@ -114,28 +106,15 @@ struct SemanticError {
     std::string context_line;
     std::string pointer_line;
     
-    /* Для ошибок типов:
-    *  - ожидаемый тип
-    *  - полученный тип
-    */
     Type* expectedType;
     Type* actualType;
     
-    /* Для ошибок аргументов:
-    *  - ожидаемое количество
-    *  - полученное количество
-    */
     int expectedCount;
     int actualCount;
     
-    /* Для ошибок идентификаторов:
-    *  - имя идентификатора
-    *  - предложение для исправления
-    */
     std::string identifierName;
     std::string suggestion;
     
-    // Конструктор для базовой ошибки
     SemanticError(const std::string& file, int l, int c, 
                   SemanticErrorCode cd, const std::string& msg)
         : filename(file), line(l), column(c), code(cd), message(msg),
@@ -144,7 +123,6 @@ struct SemanticError {
           expectedCount(0), actualCount(0),
           identifierName(""), suggestion("") {}
     
-    // Конструктор для ошибок типов
     SemanticError(const std::string& file, int l, int c,
                   Type* expected, Type* actual, const std::string& context = "")
         : filename(file), line(l), column(c),
@@ -162,7 +140,6 @@ struct SemanticError {
         message = oss.str();
     }
     
-    // Конструктор для ошибок аргументов
     SemanticError(const std::string& file, int l, int c,
                   int expected, int actual, const std::string& funcName)
         : filename(file), line(l), column(c),
@@ -179,7 +156,6 @@ struct SemanticError {
         message = oss.str();
     }
     
-    // Форматирование ошибки для вывода
     std::string toString() const {
         std::ostringstream oss;
         
@@ -191,33 +167,21 @@ struct SemanticError {
         oss << "\n  --> " << filename << ":" << line << ":" << column << "\n";
         
         if (!context_line.empty()) {
-            // Обрезаем начальные пробелы для красивого вывода
-            size_t start = context_line.find_first_not_of(" \t");
-            std::string display_line;
-            int offset = 0;
+            oss << line << "  " << context_line << "\n";
             
-            if (start != std::string::npos) {
-                display_line = context_line.substr(start);
-                offset = static_cast<int>(start);
-            } else {
-                display_line = context_line;
-            }
-            
-            // Корректируем указатель с учетом обрезанных пробелов
-            int adjusted_column = column - offset;
-            if (adjusted_column < 1) adjusted_column = 1;
-            std::string adjusted_pointer = std::string(adjusted_column - 1, ' ') + "^";
-            
-            // Выводим строку кода без палок
-            oss << line << "  " << display_line << "\n";
-            oss << "   " << adjusted_pointer << "\n";
+            std::string lineNumStr = std::to_string(line);
+            int lineNumWidth = static_cast<int>(lineNumStr.length());
+            int offset = lineNumWidth + 2 + (column - 1);
+            oss << std::string(offset, ' ') << "^\n";
         }
         
         if (expectedType || actualType) {
-            oss << "   = ожидалось: " 
-                << (expectedType ? expectedType->toString() : "?") << "\n";
-            oss << "   = получено: " 
-                << (actualType ? actualType->toString() : "?") << "\n";
+            if (expectedType && !expectedType->isError()) {
+                oss << "   = ожидалось: " << expectedType->toString() << "\n";
+            }
+            if (actualType && !actualType->isError()) {
+                oss << "   = получено: " << actualType->toString() << "\n";
+            }
         }
         
         if (expectedCount > 0 || actualCount > 0) {
@@ -241,7 +205,6 @@ struct SemanticError {
         pointer_line = std::string(errorColumn - 1, ' ') + "^";
     }
     
-    // Предложения для исправлений
     void generateSuggestion() {
         switch (code) {
             case SemanticErrorCode::UNDECLARED_IDENTIFIER:
@@ -254,28 +217,59 @@ struct SemanticError {
             case SemanticErrorCode::TYPE_MISMATCH:
                 if (expectedType && actualType) {
                     if (actualType->isInt() && expectedType->isFloat()) {
-                        suggestion = "используйте явное преобразование: (float)значение";
+                        suggestion = "используйте неявное преобразование: int автоматически преобразуется в float";
                     } else if (actualType->isFloat() && expectedType->isInt()) {
                         suggestion = "используйте явное преобразование: (int)значение";
+                    } else if (actualType->isInt() && expectedType->isBool()) {
+                        suggestion = "используйте неявное преобразование: 0 = false, ненулевое = true";
+                    } else if (actualType->isFloat() && expectedType->isBool()) {
+                        suggestion = "используйте неявное преобразование: 0.0 = false, ненулевое = true";
+                    } else if (actualType->isArithmetic() && expectedType->isArithmetic()) {
+                        suggestion = "проверьте типы операндов: для % требуются целые числа (int)";
                     } else {
                         suggestion = "приведите значение к ожидаемому типу";
                     }
+                } else {
+                    suggestion = "проверьте типы операндов";
                 }
                 break;
             case SemanticErrorCode::ARGUMENT_COUNT_MISMATCH:
                 suggestion = "проверьте сигнатуру функции и количество передаваемых аргументов";
                 break;
+            case SemanticErrorCode::ARGUMENT_TYPE_MISMATCH:
+                suggestion = "проверьте типы передаваемых аргументов";
+                break;
             case SemanticErrorCode::INVALID_RETURN_TYPE:
                 suggestion = "измените тип возвращаемого значения или тип функции";
                 break;
             case SemanticErrorCode::INVALID_CONDITION_TYPE:
-                suggestion = "условие должно иметь логический тип (bool)";
+                suggestion = "условие должно иметь логический тип (bool) или числовой тип (int/float)";
                 break;
             case SemanticErrorCode::UNINITIALIZED_VARIABLE:
                 suggestion = "инициализируйте переменную перед использованием";
                 break;
             case SemanticErrorCode::MISSING_RETURN_STATEMENT:
                 suggestion = "добавьте оператор return с соответствующим значением";
+                break;
+            case SemanticErrorCode::INVALID_OPERATION:
+                if (message.find("%") != std::string::npos) {
+                    suggestion = "оператор % работает только с целыми числами (int)";
+                } else if (message.find("%=") != std::string::npos) {
+                    suggestion = "оператор %= работает только с целыми числами (int)";
+                } else if (message.find("+=") != std::string::npos || 
+                           message.find("-=") != std::string::npos ||
+                           message.find("*=") != std::string::npos ||
+                           message.find("/=") != std::string::npos) {
+                    suggestion = "составные операторы требуют арифметических типов (int/float)";
+                } else {
+                    suggestion = "проверьте типы операндов";
+                }
+                break;
+            case SemanticErrorCode::VOID_VARIABLE:
+                suggestion = "нельзя объявить переменную типа void";
+                break;
+            case SemanticErrorCode::INVALID_ASSIGNMENT_TARGET:
+                suggestion = "левая часть присваивания должна быть изменяемой (переменная или поле)";
                 break;
             default:
                 suggestion = "";
@@ -284,7 +278,6 @@ struct SemanticError {
     }
 };
 
-// Семантические ошибки
 class ErrorCollector {
 private:
     std::vector<SemanticError> errors;

@@ -1,40 +1,40 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> bool
+Program [1:1]:
+  FunctionDecl [1:4]: test -> bool
     body:
-      Block [line 1]:
-        VarDecl [line 2]: bool a =
-          Binary [line 2]: LT
-            left: Literal [line 2]: int 5
-            right: Literal [line 2]: int 10
-        VarDecl [line 3]: bool b =
-          Binary [line 3]: GT
-            left: Literal [line 3]: int 5
-            right: Literal [line 3]: int 10
-        VarDecl [line 4]: bool c =
-          Binary [line 4]: LTE
-            left: Literal [line 4]: int 5
-            right: Literal [line 4]: int 5
-        VarDecl [line 5]: bool d =
-          Binary [line 5]: GTE
-            left: Literal [line 5]: int 5
-            right: Literal [line 5]: int 5
-        VarDecl [line 6]: bool e =
-          Binary [line 6]: EQ
-            left: Literal [line 6]: int 5
-            right: Literal [line 6]: int 5
-        VarDecl [line 7]: bool f =
-          Binary [line 7]: NEQ
-            left: Literal [line 7]: int 5
-            right: Literal [line 7]: int 6
-        ReturnStmt [line 8]:
-          Binary [line 8]: AND
-            left: Binary [line 8]: AND
-            left:   left: Binary [line 8]: AND
-            left:   left:   left: Binary [line 8]: AND
-            left:   left:   left:   left: Binary [line 8]: AND
-            left:   left:   left:   left:   left: Identifier [line 8]: a
-            left:   left:   left:   left:   right: Identifier [line 8]: b
-            left:   left:   left:   right: Identifier [line 8]: c
-            left:   left:   right: Identifier [line 8]: d
-            left:   right: Identifier [line 8]: e
-            right: Identifier [line 8]: f
+      Block [1:19]:
+        VarDecl [2:10]: bool a =
+          Binary [2:14]: LT
+            left: Literal [2:14]: int 5
+            right: Literal [2:18]: int 10
+        VarDecl [3:10]: bool b =
+          Binary [3:14]: GT
+            left: Literal [3:14]: int 5
+            right: Literal [3:18]: int 10
+        VarDecl [4:10]: bool c =
+          Binary [4:14]: LTE
+            left: Literal [4:14]: int 5
+            right: Literal [4:19]: int 5
+        VarDecl [5:10]: bool d =
+          Binary [5:14]: GTE
+            left: Literal [5:14]: int 5
+            right: Literal [5:19]: int 5
+        VarDecl [6:10]: bool e =
+          Binary [6:14]: EQ
+            left: Literal [6:14]: int 5
+            right: Literal [6:19]: int 5
+        VarDecl [7:10]: bool f =
+          Binary [7:14]: NEQ
+            left: Literal [7:14]: int 5
+            right: Literal [7:19]: int 6
+        ReturnStmt [8:5]:
+          Binary [8:12]: AND
+            left: Binary [8:12]: AND
+            left:   left: Binary [8:12]: AND
+            left:   left:   left: Binary [8:12]: AND
+            left:   left:   left:   left: Binary [8:12]: AND
+            left:   left:   left:   left:   left: Identifier [8:12]: a
+            left:   left:   left:   left:   right: Identifier [8:17]: b
+            left:   left:   left:   right: Identifier [8:22]: c
+            left:   left:   right: Identifier [8:27]: d
+            left:   right: Identifier [8:32]: e
+            right: Identifier [8:37]: f

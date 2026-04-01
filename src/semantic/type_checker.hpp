@@ -16,10 +16,10 @@ public:
         // Точное совпадение
         if (expected->equals(actual)) return true;
         
-        // Неявное преобразование int -> float
+        // Неявное преобразование int в float
         if (expected->isFloat() && actual->isInt()) return true;
         
-        // Неявное преобразование int/float -> bool
+        // Неявное преобразование int/float в bool
         if (expected->isBool() && actual->isArithmetic()) return true;
         
         if (expected->isVoid() || actual->isVoid()) return false;
@@ -43,14 +43,13 @@ public:
             return getErrorType();
         }
         
-        // Арифметические операторы
+        // Арифметические операторы (+, -, *, /)
         if (op == TokenType::tkn_ADDITION || 
             op == TokenType::tkn_SUBTRACTION ||
             op == TokenType::tkn_MULTIPLICATION ||
-            op == TokenType::tkn_SEGMENTATION ||
-            op == TokenType::tkn_MODULO) {
+            op == TokenType::tkn_SEGMENTATION) {
             
-            // Оба операнда должны быть арифметическими
+            // Оба операнда должны быть арифметическими (int/float)
             if (!left->isArithmetic() || !right->isArithmetic()) {
                 return getErrorType();
             }
@@ -62,6 +61,19 @@ public:
             }
             
             // Иначе int
+            static Type intType(TypeKind::INT);
+            return &intType;
+        }
+        
+        // Оператор остатка от деления (%)
+        if (op == TokenType::tkn_MODULO) {
+            
+            // Оба операнда int
+            if (!left->isInteger() || !right->isInteger()) {
+                return getErrorType();
+            }
+            
+            // Результат всегда int
             static Type intType(TypeKind::INT);
             return &intType;
         }
@@ -92,15 +104,56 @@ public:
             return &boolType;
         }
         
-        // Оператор присваивания
-        if (op == TokenType::tkn_ASSIGNMENT ||
-            op == TokenType::tkn_ASSIGNMENT_AFTER_ADDITION ||
+        // Простое присваивание (=)
+        if (op == TokenType::tkn_ASSIGNMENT) {
+            // Тип результата - тип левого операнда
+            return left;
+        }
+        
+        // Составные операторы присваивания (+=, -=, *=, /=)
+        if (op == TokenType::tkn_ASSIGNMENT_AFTER_ADDITION ||
             op == TokenType::tkn_ASSIGNMENT_AFTER_SUBTRACTION ||
             op == TokenType::tkn_ASSIGNMENT_AFTER_MULTIPLICATION ||
-            op == TokenType::tkn_ASSIGNMENT_AFTER_SEGMENTATION ||
-            op == TokenType::tkn_ASSIGNMENT_AFTER_MODULO) {
+            op == TokenType::tkn_ASSIGNMENT_AFTER_SEGMENTATION) {
             
-            // Тип результата - тип левого операнда
+            // Определяем базовый оператор для проверки
+            TokenType baseOp;
+            switch (op) {
+                case TokenType::tkn_ASSIGNMENT_AFTER_ADDITION:
+                    baseOp = TokenType::tkn_ADDITION;
+                    break;
+                case TokenType::tkn_ASSIGNMENT_AFTER_SUBTRACTION:
+                    baseOp = TokenType::tkn_SUBTRACTION;
+                    break;
+                case TokenType::tkn_ASSIGNMENT_AFTER_MULTIPLICATION:
+                    baseOp = TokenType::tkn_MULTIPLICATION;
+                    break;
+                case TokenType::tkn_ASSIGNMENT_AFTER_SEGMENTATION:
+                    baseOp = TokenType::tkn_SEGMENTATION;
+                    break;
+                default:
+                    return getErrorType();
+            }
+            
+            // Проверяем, что операция допустима для типов
+            Type* opResult = getBinaryResultType(baseOp, left, right);
+            if (opResult->isError()) {
+                return getErrorType();
+            }
+            
+            // Результат - тип левого операнда
+            return left;
+        }
+        
+        // Составной оператор присваивания после деления по модулю (%=)
+        if (op == TokenType::tkn_ASSIGNMENT_AFTER_MODULO) {
+
+            // Проверяем, что оба операнда int
+            if (!left->isInteger() || !right->isInteger()) {
+                return getErrorType();
+            }
+            
+            // Результат - тип левого операнда
             return left;
         }
         

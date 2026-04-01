@@ -1,95 +1,95 @@
 [Разукрашенное AST]
-Program [line 1]:
-  FunctionDecl [line 1]: check_conditions -> int
+Program [1:1]:
+  FunctionDecl [1:4]: check_conditions -> int
     parameters:
-      Param [line 1]: int x
+      Param [1:25]: int x
     body:
-      Block [line 1]:
-        IfStmt [line 2]:
-          condition: Binary [line 2] [type: bool]: GT
-          condition:   left: Identifier [line 2] [type: int]: x
-          condition:   right: Literal [line 2] [type: int]: int 0
+      Block [1:35]:
+        IfStmt [2:5]:
+          condition: Binary [2:9] [type: bool]: GT
+          condition:   left: Identifier [2:9] [type: int]: x
+          condition:   right: Literal [2:13] [type: int]: int 0
           then:
-            Block [line 2]:
-              ReturnStmt [line 3] [type: int]:
-                Literal [line 3] [type: int]: int 1
+            Block [2:16]:
+              ReturnStmt [3:9] [type: int]:
+                Literal [3:16] [type: int]: int 1
           else:
-            Block [line 4]:
-              IfStmt [line 5]:
-                condition: Binary [line 5] [type: bool]: LT
-                condition:   left: Identifier [line 5] [type: int]: x
-                condition:   right: Literal [line 5] [type: int]: int 0
+            Block [4:12]:
+              IfStmt [5:9]:
+                condition: Binary [5:13] [type: bool]: LT
+                condition:   left: Identifier [5:13] [type: int]: x
+                condition:   right: Literal [5:17] [type: int]: int 0
                 then:
-                  Block [line 5]:
-                    ReturnStmt [line 6] [type: int]:
-                      Unary [line 6] [type: int]: SUB
-                        Literal [line 6] [type: int]: int 1
-        ReturnStmt [line 9] [type: int]:
-          Literal [line 9] [type: int]: int 0
-  FunctionDecl [line 12]: loop_example -> int
+                  Block [5:20]:
+                    ReturnStmt [6:13] [type: int]:
+                      Unary [6:21] [type: int]: SUB
+                        Literal [6:21] [type: int]: int 1
+        ReturnStmt [9:5] [type: int]:
+          Literal [9:12] [type: int]: int 0
+  FunctionDecl [12:4]: loop_example -> int
     parameters:
-      Param [line 12]: int n
+      Param [12:21]: int n
     body:
-      Block [line 12]:
-        VarDecl [line 13]: int sum [type: int] =
-          Literal [line 13] [type: int]: int 0
-        ForStmt [line 15]:
+      Block [12:31]:
+        VarDecl [13:9]: int sum [type: int] =
+          Literal [13:15] [type: int]: int 0
+        ForStmt [15:5]:
           init:
-            VarDecl [line 15]: int i [type: int] =
-              Literal [line 15] [type: int]: int 0
-          condition: Binary [line 15] [type: bool]: LT
-          condition:   left: Identifier [line 15] [type: int]: i
-          condition:   right: Identifier [line 15] [type: int]: n
-          update: Assignment [line 15] [type: int]: ASSIGN
-          update:   target: Identifier [line 15] [type: int]: i
-          update:   value: Binary [line 15] [type: int]: ADD
-          update:   value:   left: Identifier [line 15] [type: int]: i
-          update:   value:   right: Literal [line 15] [type: int]: int 1
+            VarDecl [15:14]: int i [type: int] =
+              Literal [15:18] [type: int]: int 0
+          condition: Binary [15:21] [type: bool]: LT
+          condition:   left: Identifier [15:21] [type: int]: i
+          condition:   right: Identifier [15:25] [type: int]: n
+          update: Assignment [15:28] [type: int]: ASSIGN
+          update:   target: Identifier [15:28] [type: int]: i
+          update:   value: Binary [15:32] [type: int]: ADD
+          update:   value:   left: Identifier [15:32] [type: int]: i
+          update:   value:   right: Literal [15:36] [type: int]: int 1
           body:
-            Block [line 15]:
-              ExprStmt [line 16]:
-                Assignment [line 16] [type: int]: ASSIGN
-                  target: Identifier [line 16] [type: int]: sum
-                  value: Binary [line 16] [type: int]: ADD
-                  value:   left: Identifier [line 16] [type: int]: sum
-                  value:   right: Identifier [line 16] [type: int]: i
-        VarDecl [line 19]: int i [type: int] =
-          Literal [line 19] [type: int]: int 0
-        WhileStmt [line 20]:
-          condition: Binary [line 20] [type: bool]: LT
-          condition:   left: Identifier [line 20] [type: int]: i
-          condition:   right: Identifier [line 20] [type: int]: n
+            Block [15:39]:
+              ExprStmt [16:9]:
+                Assignment [16:9] [type: int]: ASSIGN
+                  target: Identifier [16:9] [type: int]: sum
+                  value: Binary [16:15] [type: int]: ADD
+                  value:   left: Identifier [16:15] [type: int]: sum
+                  value:   right: Identifier [16:21] [type: int]: i
+        VarDecl [19:9]: int i [type: int] =
+          Literal [19:13] [type: int]: int 0
+        WhileStmt [20:5]:
+          condition: Binary [20:12] [type: bool]: LT
+          condition:   left: Identifier [20:12] [type: int]: i
+          condition:   right: Identifier [20:16] [type: int]: n
           body:
-            Block [line 20]:
-              ExprStmt [line 21]:
-                Assignment [line 21] [type: int]: ASSIGN
-                  target: Identifier [line 21] [type: int]: sum
-                  value: Binary [line 21] [type: int]: ADD
-                  value:   left: Identifier [line 21] [type: int]: sum
-                  value:   right: Identifier [line 21] [type: int]: i
-              ExprStmt [line 22]:
-                Assignment [line 22] [type: int]: ASSIGN
-                  target: Identifier [line 22] [type: int]: i
-                  value: Binary [line 22] [type: int]: ADD
-                  value:   left: Identifier [line 22] [type: int]: i
-                  value:   right: Literal [line 22] [type: int]: int 1
-        ReturnStmt [line 25] [type: int]:
-          Identifier [line 25] [type: int]: sum
-  FunctionDecl [line 28]: main -> int
+            Block [20:19]:
+              ExprStmt [21:9]:
+                Assignment [21:9] [type: int]: ASSIGN
+                  target: Identifier [21:9] [type: int]: sum
+                  value: Binary [21:15] [type: int]: ADD
+                  value:   left: Identifier [21:15] [type: int]: sum
+                  value:   right: Identifier [21:21] [type: int]: i
+              ExprStmt [22:9]:
+                Assignment [22:9] [type: int]: ASSIGN
+                  target: Identifier [22:9] [type: int]: i
+                  value: Binary [22:13] [type: int]: ADD
+                  value:   left: Identifier [22:13] [type: int]: i
+                  value:   right: Literal [22:17] [type: int]: int 1
+        ReturnStmt [25:5] [type: int]:
+          Identifier [25:12] [type: int]: sum
+  FunctionDecl [28:4]: main -> int
     body:
-      Block [line 28]:
-        VarDecl [line 29]: int sign [type: int] =
-          Call [line 29] [type: int]:
-            callee: Identifier [line 29] [type: fn(int) -> int]: check_conditions
+      Block [28:18]:
+        VarDecl [29:9]: int sign [type: int] =
+          Call [29:16] [type: int]:
+            callee: Identifier [29:16] [type: fn(int) -> int]: check_conditions
             arguments:
-              Literal [line 29] [type: int]: int 5
-        VarDecl [line 30]: int total [type: int] =
-          Call [line 30] [type: int]:
-            callee: Identifier [line 30] [type: fn(int) -> int]: loop_example
+              Literal [29:33] [type: int]: int 5
+        VarDecl [30:9]: int total [type: int] =
+          Call [30:17] [type: int]:
+            callee: Identifier [30:17] [type: fn(int) -> int]: loop_example
             arguments:
-              Literal [line 30] [type: int]: int 10
-        ReturnStmt [line 31] [type: int]:
-          Identifier [line 31] [type: int]: total
+              Literal [30:30] [type: int]: int 10
+        ReturnStmt [31:5] [type: int]:
+          Identifier [31:12] [type: int]: total
 
 [Таблица символов]
 Symbol Table:

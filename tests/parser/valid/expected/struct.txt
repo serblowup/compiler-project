@@ -1,11 +1,11 @@
-Program [line 1]:
-  StructDecl [line 1]: Point
+Program [1:1]:
+  StructDecl [1:8]: Point
     fields:
-      VarDecl [line 2]: int x
-      VarDecl [line 3]: int y
-  FunctionDecl [line 6]: main -> int
+      VarDecl [2:9]: int x
+      VarDecl [3:9]: int y
+  FunctionDecl [6:4]: main -> int
     body:
-      Block [line 6]:
-        VarDecl [line 7]: struct Point p
-        ReturnStmt [line 8]:
-          Literal [line 8]: int 0
+      Block [6:18]:
+        VarDecl [7:18]: struct Point p
+        ReturnStmt [8:5]:
+          Literal [8:12]: int 0

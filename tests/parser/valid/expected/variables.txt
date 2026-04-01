@@ -1,15 +1,15 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> int
+Program [1:1]:
+  FunctionDecl [1:4]: test -> int
     body:
-      Block [line 1]:
-        VarDecl [line 2]: int a
-        VarDecl [line 3]: int b =
-          Literal [line 3]: int 5
-        VarDecl [line 4]: float c =
-          Literal [line 4]: float 3.140000
-        VarDecl [line 5]: bool d =
-          Literal [line 5]: bool true
-        VarDecl [line 6]: bool e =
-          Literal [line 6]: bool false
-        ReturnStmt [line 7]:
-          Literal [line 7]: int 0
+      Block [1:18]:
+        VarDecl [2:9]: int a
+        VarDecl [3:9]: int b =
+          Literal [3:13]: int 5
+        VarDecl [4:11]: float c =
+          Literal [4:15]: float 3.140000
+        VarDecl [5:10]: bool d =
+          Literal [5:14]: bool true
+        VarDecl [6:10]: bool e =
+          Literal [6:14]: bool false
+        ReturnStmt [7:5]:
+          Literal [7:12]: int 0

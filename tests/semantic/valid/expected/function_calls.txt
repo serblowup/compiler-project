@@ -1,46 +1,46 @@
 [Разукрашенное AST]
-Program [line 1]:
-  FunctionDecl [line 1]: add -> int
+Program [1:1]:
+  FunctionDecl [1:4]: add -> int
     parameters:
-      Param [line 1]: int a
-      Param [line 1]: int b
+      Param [1:12]: int a
+      Param [1:19]: int b
     body:
-      Block [line 1]:
-        ReturnStmt [line 2] [type: int]:
-          Binary [line 2] [type: int]: ADD
-            left: Identifier [line 2] [type: int]: a
-            right: Identifier [line 2] [type: int]: b
-  FunctionDecl [line 5]: multiply -> float
+      Block [1:29]:
+        ReturnStmt [2:5] [type: int]:
+          Binary [2:12] [type: int]: ADD
+            left: Identifier [2:12] [type: int]: a
+            right: Identifier [2:16] [type: int]: b
+  FunctionDecl [5:4]: multiply -> float
     parameters:
-      Param [line 5]: float a
-      Param [line 5]: float b
+      Param [5:19]: float a
+      Param [5:28]: float b
     body:
-      Block [line 5]:
-        ReturnStmt [line 6] [type: float]:
-          Binary [line 6] [type: float]: MUL
-            left: Identifier [line 6] [type: float]: a
-            right: Identifier [line 6] [type: float]: b
-  FunctionDecl [line 9]: main -> int
+      Block [5:40]:
+        ReturnStmt [6:5] [type: float]:
+          Binary [6:12] [type: float]: MUL
+            left: Identifier [6:12] [type: float]: a
+            right: Identifier [6:16] [type: float]: b
+  FunctionDecl [9:4]: main -> int
     body:
-      Block [line 9]:
-        VarDecl [line 10]: int x [type: int] =
-          Literal [line 10] [type: int]: int 5
-        VarDecl [line 11]: int y [type: int] =
-          Literal [line 11] [type: int]: int 10
-        VarDecl [line 13]: int sum [type: int] =
-          Call [line 13] [type: int]:
-            callee: Identifier [line 13] [type: fn(int, int) -> int]: add
+      Block [9:18]:
+        VarDecl [10:9]: int x [type: int] =
+          Literal [10:13] [type: int]: int 5
+        VarDecl [11:9]: int y [type: int] =
+          Literal [11:13] [type: int]: int 10
+        VarDecl [13:9]: int sum [type: int] =
+          Call [13:15] [type: int]:
+            callee: Identifier [13:15] [type: fn(int, int) -> int]: add
             arguments:
-              Identifier [line 13] [type: int]: x
-              Identifier [line 13] [type: int]: y
-        VarDecl [line 14]: float prod [type: float] =
-          Call [line 14] [type: float]:
-            callee: Identifier [line 14] [type: fn(float, float) -> float]: multiply
+              Identifier [13:19] [type: int]: x
+              Identifier [13:22] [type: int]: y
+        VarDecl [14:11]: float prod [type: float] =
+          Call [14:18] [type: float]:
+            callee: Identifier [14:18] [type: fn(float, float) -> float]: multiply
             arguments:
-              Literal [line 14] [type: float]: float 3.500000
-              Literal [line 14] [type: float]: float 2.000000
-        ReturnStmt [line 16] [type: int]:
-          Identifier [line 16] [type: int]: sum
+              Literal [14:27] [type: float]: float 3.500000
+              Literal [14:32] [type: float]: float 2.000000
+        ReturnStmt [16:5] [type: int]:
+          Identifier [16:12] [type: int]: sum
 
 [Таблица символов]
 Symbol Table:

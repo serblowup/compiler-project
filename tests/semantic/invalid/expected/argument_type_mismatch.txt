@@ -1,7 +1,7 @@
 semantic error: несоответствие типов - несоответствие типов в аргументе 1
   --> tests/semantic/invalid/argument_type_mismatch.src:6:22
-6  int result = add(3.14, 5);
-                    ^
+6      int result = add(3.14, 5);
+                        ^
    = ожидалось: int
    = получено: float
    = подсказка: используйте явное преобразование: (int)значение

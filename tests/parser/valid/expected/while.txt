@@ -1,28 +1,28 @@
-Program [line 1]:
-  FunctionDecl [line 1]: sum -> int
+Program [1:1]:
+  FunctionDecl [1:4]: sum -> int
     parameters:
-      Param [line 1]: int n
+      Param [1:12]: int n
     body:
-      Block [line 1]:
-        VarDecl [line 2]: int result =
-          Literal [line 2]: int 0
-        WhileStmt [line 3]:
-          condition: Binary [line 3]: GT
-          condition:   left: Identifier [line 3]: n
-          condition:   right: Literal [line 3]: int 0
+      Block [1:22]:
+        VarDecl [2:9]: int result =
+          Literal [2:18]: int 0
+        WhileStmt [3:5]:
+          condition: Binary [3:12]: GT
+          condition:   left: Identifier [3:12]: n
+          condition:   right: Literal [3:16]: int 0
           body:
-            Block [line 3]:
-              ExprStmt [line 4]:
-                Assignment [line 4]: ASSIGN
-                  target: Identifier [line 4]: result
-                  value: Binary [line 4]: ADD
-                  value:   left: Identifier [line 4]: result
-                  value:   right: Identifier [line 4]: n
-              ExprStmt [line 5]:
-                Assignment [line 5]: ASSIGN
-                  target: Identifier [line 5]: n
-                  value: Binary [line 5]: SUB
-                  value:   left: Identifier [line 5]: n
-                  value:   right: Literal [line 5]: int 1
-        ReturnStmt [line 7]:
-          Identifier [line 7]: result
+            Block [3:19]:
+              ExprStmt [4:9]:
+                Assignment [4:9]: ASSIGN
+                  target: Identifier [4:9]: result
+                  value: Binary [4:18]: ADD
+                  value:   left: Identifier [4:18]: result
+                  value:   right: Identifier [4:27]: n
+              ExprStmt [5:9]:
+                Assignment [5:9]: ASSIGN
+                  target: Identifier [5:9]: n
+                  value: Binary [5:13]: SUB
+                  value:   left: Identifier [5:13]: n
+                  value:   right: Literal [5:17]: int 1
+        ReturnStmt [7:5]:
+          Identifier [7:12]: result

@@ -1,42 +1,42 @@
 [Разукрашенное AST]
-Program [line 1]:
-  FunctionDecl [line 1]: main -> int
+Program [1:1]:
+  FunctionDecl [1:4]: main -> int
     body:
-      Block [line 1]:
-        VarDecl [line 2]: int a [type: int] =
-          Literal [line 2] [type: int]: int 5
-        VarDecl [line 3]: float b [type: float] =
-          Literal [line 3] [type: float]: float 3.140000
-        VarDecl [line 4]: bool c [type: bool] =
-          Literal [line 4] [type: bool]: bool true
-        ExprStmt [line 6]:
-          Assignment [line 6] [type: float]: ASSIGN
-            target: Identifier [line 6] [type: float]: b
-            value: Identifier [line 6] [type: int]: a
-        VarDecl [line 8]: float d [type: float] =
-          Binary [line 8] [type: float]: ADD
-            left: Identifier [line 8] [type: int]: a
-            right: Identifier [line 8] [type: float]: b
-        IfStmt [line 10]:
-          condition: Identifier [line 10] [type: int]: a
+      Block [1:18]:
+        VarDecl [2:9]: int a [type: int] =
+          Literal [2:13] [type: int]: int 5
+        VarDecl [3:11]: float b [type: float] =
+          Literal [3:15] [type: float]: float 3.140000
+        VarDecl [4:10]: bool c [type: bool] =
+          Literal [4:14] [type: bool]: bool true
+        ExprStmt [6:5]:
+          Assignment [6:5] [type: float]: ASSIGN
+            target: Identifier [6:5] [type: float]: b
+            value: Identifier [6:9] [type: int]: a
+        VarDecl [8:11]: float d [type: float] =
+          Binary [8:15] [type: float]: ADD
+            left: Identifier [8:15] [type: int]: a
+            right: Identifier [8:19] [type: float]: b
+        IfStmt [10:5]:
+          condition: Identifier [10:9] [type: int]: a
           then:
-            Block [line 10]:
-              ExprStmt [line 11]:
-                Assignment [line 11] [type: int]: ASSIGN
-                  target: Identifier [line 11] [type: int]: a
-                  value: Literal [line 11] [type: int]: int 10
-        IfStmt [line 14]:
-          condition: Binary [line 14] [type: bool]: LT
-          condition:   left: Identifier [line 14] [type: int]: a
-          condition:   right: Identifier [line 14] [type: float]: b
+            Block [10:12]:
+              ExprStmt [11:9]:
+                Assignment [11:9] [type: int]: ASSIGN
+                  target: Identifier [11:9] [type: int]: a
+                  value: Literal [11:13] [type: int]: int 10
+        IfStmt [14:5]:
+          condition: Binary [14:9] [type: bool]: LT
+          condition:   left: Identifier [14:9] [type: int]: a
+          condition:   right: Identifier [14:13] [type: float]: b
           then:
-            Block [line 14]:
-              ExprStmt [line 15]:
-                Assignment [line 15] [type: int]: ASSIGN
-                  target: Identifier [line 15] [type: int]: a
-                  value: Literal [line 15] [type: int]: int 1
-        ReturnStmt [line 18] [type: int]:
-          Literal [line 18] [type: int]: int 0
+            Block [14:16]:
+              ExprStmt [15:9]:
+                Assignment [15:9] [type: int]: ASSIGN
+                  target: Identifier [15:9] [type: int]: a
+                  value: Literal [15:13] [type: int]: int 1
+        ReturnStmt [18:5] [type: int]:
+          Literal [18:12] [type: int]: int 0
 
 [Таблица символов]
 Symbol Table:

@@ -1,58 +1,58 @@
 [Разукрашенное AST]
-Program [line 1]:
-  FunctionDecl [line 1]: test_scopes -> int
+Program [1:1]:
+  FunctionDecl [1:4]: test_scopes -> int
     body:
-      Block [line 1]:
-        VarDecl [line 2]: int x [type: int] =
-          Literal [line 2] [type: int]: int 10
-        IfStmt [line 4]:
-          condition: Binary [line 4] [type: bool]: GT
-          condition:   left: Identifier [line 4] [type: int]: x
-          condition:   right: Literal [line 4] [type: int]: int 5
+      Block [1:25]:
+        VarDecl [2:9]: int x [type: int] =
+          Literal [2:13] [type: int]: int 10
+        IfStmt [4:5]:
+          condition: Binary [4:9] [type: bool]: GT
+          condition:   left: Identifier [4:9] [type: int]: x
+          condition:   right: Literal [4:13] [type: int]: int 5
           then:
-            Block [line 4]:
-              VarDecl [line 5]: int x [type: int] =
-                Literal [line 5] [type: int]: int 20
-              ExprStmt [line 6]:
-                Assignment [line 6] [type: int]: ASSIGN
-                  target: Identifier [line 6] [type: int]: x
-                  value: Literal [line 6] [type: int]: int 15
-        ExprStmt [line 9]:
-          Assignment [line 9] [type: int]: ASSIGN
-            target: Identifier [line 9] [type: int]: x
-            value: Literal [line 9] [type: int]: int 30
-        WhileStmt [line 11]:
-          condition: Binary [line 11] [type: bool]: LT
-          condition:   left: Identifier [line 11] [type: int]: x
-          condition:   right: Literal [line 11] [type: int]: int 50
+            Block [4:16]:
+              VarDecl [5:13]: int x [type: int] =
+                Literal [5:17] [type: int]: int 20
+              ExprStmt [6:9]:
+                Assignment [6:9] [type: int]: ASSIGN
+                  target: Identifier [6:9] [type: int]: x
+                  value: Literal [6:13] [type: int]: int 15
+        ExprStmt [9:5]:
+          Assignment [9:5] [type: int]: ASSIGN
+            target: Identifier [9:5] [type: int]: x
+            value: Literal [9:9] [type: int]: int 30
+        WhileStmt [11:5]:
+          condition: Binary [11:12] [type: bool]: LT
+          condition:   left: Identifier [11:12] [type: int]: x
+          condition:   right: Literal [11:16] [type: int]: int 50
           body:
-            Block [line 11]:
-              VarDecl [line 12]: int y [type: int] =
-                Identifier [line 12] [type: int]: x
-              ExprStmt [line 13]:
-                Assignment [line 13] [type: int]: ASSIGN
-                  target: Identifier [line 13] [type: int]: x
-                  value: Binary [line 13] [type: int]: ADD
-                  value:   left: Identifier [line 13] [type: int]: x
-                  value:   right: Literal [line 13] [type: int]: int 1
-        ForStmt [line 16]:
+            Block [11:20]:
+              VarDecl [12:13]: int y [type: int] =
+                Identifier [12:17] [type: int]: x
+              ExprStmt [13:9]:
+                Assignment [13:9] [type: int]: ASSIGN
+                  target: Identifier [13:9] [type: int]: x
+                  value: Binary [13:13] [type: int]: ADD
+                  value:   left: Identifier [13:13] [type: int]: x
+                  value:   right: Literal [13:17] [type: int]: int 1
+        ForStmt [16:5]:
           init:
-            VarDecl [line 16]: int i [type: int] =
-              Literal [line 16] [type: int]: int 0
-          condition: Binary [line 16] [type: bool]: LT
-          condition:   left: Identifier [line 16] [type: int]: i
-          condition:   right: Literal [line 16] [type: int]: int 10
-          update: Assignment [line 16] [type: int]: ASSIGN
-          update:   target: Identifier [line 16] [type: int]: i
-          update:   value: Binary [line 16] [type: int]: ADD
-          update:   value:   left: Identifier [line 16] [type: int]: i
-          update:   value:   right: Literal [line 16] [type: int]: int 1
+            VarDecl [16:14]: int i [type: int] =
+              Literal [16:18] [type: int]: int 0
+          condition: Binary [16:21] [type: bool]: LT
+          condition:   left: Identifier [16:21] [type: int]: i
+          condition:   right: Literal [16:25] [type: int]: int 10
+          update: Assignment [16:29] [type: int]: ASSIGN
+          update:   target: Identifier [16:29] [type: int]: i
+          update:   value: Binary [16:33] [type: int]: ADD
+          update:   value:   left: Identifier [16:33] [type: int]: i
+          update:   value:   right: Literal [16:37] [type: int]: int 1
           body:
-            Block [line 16]:
-              VarDecl [line 17]: int z [type: int] =
-                Identifier [line 17] [type: int]: i
-        ReturnStmt [line 20] [type: int]:
-          Identifier [line 20] [type: int]: x
+            Block [16:40]:
+              VarDecl [17:13]: int z [type: int] =
+                Identifier [17:17] [type: int]: i
+        ReturnStmt [20:5] [type: int]:
+          Identifier [20:12] [type: int]: x
 
 [Таблица символов]
 Symbol Table:

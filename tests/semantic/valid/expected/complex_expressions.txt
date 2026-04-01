@@ -1,44 +1,44 @@
 [Разукрашенное AST]
-Program [line 1]:
-  FunctionDecl [line 1]: compute -> float
+Program [1:1]:
+  FunctionDecl [1:4]: compute -> float
     parameters:
-      Param [line 1]: int a
-      Param [line 1]: int b
-      Param [line 1]: float c
+      Param [1:16]: int a
+      Param [1:23]: int b
+      Param [1:32]: float c
     body:
-      Block [line 1]:
-        VarDecl [line 2]: float result [type: float] =
-          Binary [line 2] [type: float]: MUL
-            left: Binary [line 2] [type: int]: ADD
-            left:   left: Identifier [line 2] [type: int]: a
-            left:   right: Identifier [line 2] [type: int]: b
-            right: Identifier [line 2] [type: float]: c
-        ExprStmt [line 3]:
-          Assignment [line 3] [type: float]: ASSIGN
-            target: Identifier [line 3] [type: float]: result
-            value: Binary [line 3] [type: float]: ADD
-            value:   left: Binary [line 3] [type: float]: SUB
-            value:   left:   left: Identifier [line 3] [type: float]: result
-            value:   left:   right: Binary [line 3] [type: float]: MUL
-            value:   left:   right:   left: Identifier [line 3] [type: int]: a
-            value:   left:   right:   right: Identifier [line 3] [type: float]: c
-            value:   right: Binary [line 3] [type: float]: DIV
-            value:   right:   left: Identifier [line 3] [type: int]: b
-            value:   right:   right: Identifier [line 3] [type: float]: c
-        ReturnStmt [line 4] [type: float]:
-          Identifier [line 4] [type: float]: result
-  FunctionDecl [line 7]: main -> int
+      Block [1:44]:
+        VarDecl [2:11]: float result [type: float] =
+          Binary [2:21] [type: float]: MUL
+            left: Binary [2:21] [type: int]: ADD
+            left:   left: Identifier [2:21] [type: int]: a
+            left:   right: Identifier [2:25] [type: int]: b
+            right: Identifier [2:30] [type: float]: c
+        ExprStmt [3:5]:
+          Assignment [3:5] [type: float]: ASSIGN
+            target: Identifier [3:5] [type: float]: result
+            value: Binary [3:14] [type: float]: ADD
+            value:   left: Binary [3:14] [type: float]: SUB
+            value:   left:   left: Identifier [3:14] [type: float]: result
+            value:   left:   right: Binary [3:24] [type: float]: MUL
+            value:   left:   right:   left: Identifier [3:24] [type: int]: a
+            value:   left:   right:   right: Identifier [3:28] [type: float]: c
+            value:   right: Binary [3:34] [type: float]: DIV
+            value:   right:   left: Identifier [3:34] [type: int]: b
+            value:   right:   right: Identifier [3:38] [type: float]: c
+        ReturnStmt [4:5] [type: float]:
+          Identifier [4:12] [type: float]: result
+  FunctionDecl [7:4]: main -> int
     body:
-      Block [line 7]:
-        VarDecl [line 8]: float val [type: float] =
-          Call [line 8] [type: float]:
-            callee: Identifier [line 8] [type: fn(int, int, float) -> float]: compute
+      Block [7:18]:
+        VarDecl [8:11]: float val [type: float] =
+          Call [8:17] [type: float]:
+            callee: Identifier [8:17] [type: fn(int, int, float) -> float]: compute
             arguments:
-              Literal [line 8] [type: int]: int 10
-              Literal [line 8] [type: int]: int 20
-              Literal [line 8] [type: float]: float 2.500000
-        ReturnStmt [line 9] [type: int]:
-          Literal [line 9] [type: int]: int 0
+              Literal [8:25] [type: int]: int 10
+              Literal [8:29] [type: int]: int 20
+              Literal [8:33] [type: float]: float 2.500000
+        ReturnStmt [9:5] [type: int]:
+          Literal [9:12] [type: int]: int 0
 
 [Таблица символов]
 Symbol Table:

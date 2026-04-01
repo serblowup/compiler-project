@@ -1,6 +1,6 @@
-Program [line 1]:
-  FunctionDecl [line 1]: main -> void
+Program [1:1]:
+  FunctionDecl [1:4]: main -> void
     body:
-      Block [line 1]:
-        ReturnStmt [line 2]:
-          Literal [line 2]: int 0
+      Block [1:11]:
+        ReturnStmt [2:5]:
+          Literal [2:12]: int 0

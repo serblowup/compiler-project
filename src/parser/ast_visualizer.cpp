@@ -46,33 +46,33 @@ std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
     
     if (dynamic_cast<const ProgramNode*>(node)) {
         color = "lightgreen";
-        label = "Program";
+        label = "Program [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
         shape = "box";
     } else if (auto func = dynamic_cast<const FunctionDeclNode*>(node)) {
         color = "lightcoral";
-        label = "Function: " + func->getName() + "\\n-> " + func->getReturnType();
+        label = "Function: " + func->getName() + " [" + std::to_string(func->getLine()) + ":" + std::to_string(func->getColumn()) + "]\\n-> " + func->getReturnType();
         shape = "box";
     } else if (auto str = dynamic_cast<const StructDeclNode*>(node)) {
         color = "lightgoldenrodyellow";
-        label = "Struct: " + str->getName();
+        label = "Struct: " + str->getName() + " [" + std::to_string(str->getLine()) + ":" + std::to_string(str->getColumn()) + "]";
         shape = "box";
     } else if (auto var = dynamic_cast<const VarDeclStmtNode*>(node)) {
         color = "lightskyblue";
-        label = "VarDecl: " + var->getType() + " " + var->getName();
+        label = "VarDecl: " + var->getType() + " " + var->getName() + " [" + std::to_string(var->getLine()) + ":" + std::to_string(var->getColumn()) + "]";
         if (var->hasInitializer()) {
             label += " = ...";
         }
         shape = "box";
     } else if (auto bin = dynamic_cast<const BinaryExprNode*>(node)) {
         color = "thistle";
-        label = std::string(token_type_to_string(bin->getOperator()));
+        label = std::string(token_type_to_string(bin->getOperator())) + " [" + std::to_string(bin->getLine()) + ":" + std::to_string(bin->getColumn()) + "]";
         if (bin->getType()) {
             label += "\\n(" + bin->getType()->toString() + ")";
         }
         shape = "ellipse";
     } else if (auto un = dynamic_cast<const UnaryExprNode*>(node)) {
         color = "thistle";
-        label = std::string(token_type_to_string(un->getOperator()));
+        label = std::string(token_type_to_string(un->getOperator())) + " [" + std::to_string(un->getLine()) + ":" + std::to_string(un->getColumn()) + "]";
         if (un->getType()) {
             label += "\\n(" + un->getType()->toString() + ")";
         }
@@ -92,13 +92,14 @@ std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
         } else {
             label = "Literal";
         }
+        label += " [" + std::to_string(lit->getLine()) + ":" + std::to_string(lit->getColumn()) + "]";
         if (lit->ExpressionNode::getType()) {
             label += "\\n(" + lit->ExpressionNode::getType()->toString() + ")";
         }
         shape = "ellipse";
     } else if (auto id = dynamic_cast<const IdentifierExprNode*>(node)) {
         color = "wheat";
-        label = id->getName();
+        label = id->getName() + " [" + std::to_string(id->getLine()) + ":" + std::to_string(id->getColumn()) + "]";
         if (id->getType()) {
             std::string typeStr = id->getType()->toString();
             if (id->getType()->isFunction()) {
@@ -118,48 +119,48 @@ std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
         shape = "ellipse";
     } else if (auto call = dynamic_cast<const CallExprNode*>(node)) {
         color = "thistle";
-        label = "Call";
+        label = "Call [" + std::to_string(call->getLine()) + ":" + std::to_string(call->getColumn()) + "]";
         if (call->getType()) {
             label += "\\n(" + call->getType()->toString() + ")";
         }
         shape = "ellipse";
     } else if (auto assign = dynamic_cast<const AssignmentExprNode*>(node)) {
         color = "thistle";
-        label = std::string(token_type_to_string(assign->getOperator()));
+        label = std::string(token_type_to_string(assign->getOperator())) + " [" + std::to_string(assign->getLine()) + ":" + std::to_string(assign->getColumn()) + "]";
         if (assign->getType()) {
             label += "\\n(" + assign->getType()->toString() + ")";
         }
         shape = "ellipse";
     } else if (dynamic_cast<const IfStmtNode*>(node)) {
         color = "lightpink";
-        label = "If";
+        label = "If [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
         shape = "box";
     } else if (dynamic_cast<const WhileStmtNode*>(node)) {
         color = "lightpink";
-        label = "While";
+        label = "While [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
         shape = "box";
     } else if (dynamic_cast<const ForStmtNode*>(node)) {
         color = "lightpink";
-        label = "For";
+        label = "For [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
         shape = "box";
     } else if (dynamic_cast<const ReturnStmtNode*>(node)) {
         color = "lightpink";
-        label = "Return";
+        label = "Return [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
         shape = "box";
     } else if (dynamic_cast<const BlockStmtNode*>(node)) {
         color = "lightgray";
-        label = "Block";
+        label = "Block [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
         shape = "box";
     } else if (dynamic_cast<const ExprStmtNode*>(node)) {
         color = "lightgray";
-        label = "ExprStmt";
+        label = "ExprStmt [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
         shape = "box";
     } else if (auto param = dynamic_cast<const ParamNode*>(node)) {
         color = "lightsalmon";
-        label = param->getType() + " " + param->getName();
+        label = param->getType() + " " + param->getName() + " [" + std::to_string(param->getLine()) + ":" + std::to_string(param->getColumn()) + "]";
         shape = "box";
     } else {
-        label = "Node";
+        label = "Node [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
         shape = "box";
     }
     

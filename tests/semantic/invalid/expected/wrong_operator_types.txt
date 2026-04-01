@@ -1,18 +1,19 @@
-semantic error: несоответствие типов - несоответствие типов в бинарной операции
+semantic error: несоответствие типов - несоответствие типов в недопустимая операция '+' для типов bool и int
   --> tests/semantic/invalid/wrong_operator_types.src:5:13
-5  int y = b + x;
-           ^
+5      int y = b + x;
+               ^
+   = подсказка: проверьте типы операндов
 
-semantic error: несоответствие типов - несоответствие типов в бинарной операции
+semantic error: несоответствие типов - несоответствие типов в недопустимая операция '&&' для типов int и bool
   --> tests/semantic/invalid/wrong_operator_types.src:7:14
-7  bool c = x && b;
-            ^
+7      bool c = x && b;
+                ^
+   = подсказка: проверьте типы операндов
 
-semantic error: несоответствие типов - несоответствие типов в присваивании
-  --> tests/semantic/invalid/wrong_operator_types.src:10:5
-10  x = f % x;
-   ^
-   = ожидалось: int
+semantic error: недопустимая операция - оператор '%' требует целочисленный левый операнд
+  --> tests/semantic/invalid/wrong_operator_types.src:10:9
+10      x = f % x;
+            ^
    = получено: float
-   = подсказка: используйте явное преобразование: (int)значение
+   = подсказка: оператор % работает только с целыми числами (int)
 

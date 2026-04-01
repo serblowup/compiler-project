@@ -1,47 +1,47 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> int
+Program [1:1]:
+  FunctionDecl [1:4]: test -> int
     parameters:
-      Param [line 1]: int x
+      Param [1:13]: int x
     body:
-      Block [line 1]:
-        IfStmt [line 2]:
-          condition: Binary [line 2]: GT
-          condition:   left: Identifier [line 2]: x
-          condition:   right: Literal [line 2]: int 0
+      Block [1:23]:
+        IfStmt [2:5]:
+          condition: Binary [2:9]: GT
+          condition:   left: Identifier [2:9]: x
+          condition:   right: Literal [2:13]: int 0
           then:
-            Block [line 2]:
-              ReturnStmt [line 3]:
-                Identifier [line 3]: x
+            Block [2:16]:
+              ReturnStmt [3:9]:
+                Identifier [3:16]: x
           else:
-            Block [line 4]:
-              ReturnStmt [line 5]:
-                Unary [line 5]: SUB
-                  Identifier [line 5]: x
-  FunctionDecl [line 9]: nested -> int
+            Block [4:12]:
+              ReturnStmt [5:9]:
+                Unary [5:17]: SUB
+                  Identifier [5:17]: x
+  FunctionDecl [9:4]: nested -> int
     parameters:
-      Param [line 9]: int a
-      Param [line 9]: int b
+      Param [9:15]: int a
+      Param [9:22]: int b
     body:
-      Block [line 9]:
-        IfStmt [line 10]:
-          condition: Binary [line 10]: GT
-          condition:   left: Identifier [line 10]: a
-          condition:   right: Identifier [line 10]: b
+      Block [9:32]:
+        IfStmt [10:5]:
+          condition: Binary [10:9]: GT
+          condition:   left: Identifier [10:9]: a
+          condition:   right: Identifier [10:13]: b
           then:
-            Block [line 10]:
-              IfStmt [line 11]:
-                condition: Binary [line 11]: GT
-                condition:   left: Identifier [line 11]: a
-                condition:   right: Literal [line 11]: int 0
+            Block [10:16]:
+              IfStmt [11:9]:
+                condition: Binary [11:13]: GT
+                condition:   left: Identifier [11:13]: a
+                condition:   right: Literal [11:17]: int 0
                 then:
-                  Block [line 11]:
-                    ReturnStmt [line 12]:
-                      Identifier [line 12]: a
+                  Block [11:20]:
+                    ReturnStmt [12:13]:
+                      Identifier [12:20]: a
                 else:
-                  Block [line 13]:
-                    ReturnStmt [line 14]:
-                      Literal [line 14]: int 0
+                  Block [13:16]:
+                    ReturnStmt [14:13]:
+                      Literal [14:20]: int 0
           else:
-            Block [line 16]:
-              ReturnStmt [line 17]:
-                Identifier [line 17]: b
+            Block [16:12]:
+              ReturnStmt [17:9]:
+                Identifier [17:16]: b

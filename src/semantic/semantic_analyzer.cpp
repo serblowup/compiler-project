@@ -5,6 +5,34 @@
 
 namespace semantic {
 
+    static std::string operatorToSymbol(TokenType op) {
+        switch (op) {
+            case TokenType::tkn_ADDITION: return "+";
+            case TokenType::tkn_SUBTRACTION: return "-";
+            case TokenType::tkn_MULTIPLICATION: return "*";
+            case TokenType::tkn_SEGMENTATION: return "/";
+            case TokenType::tkn_MODULO: return "%";
+            case TokenType::tkn_EQUAL: return "==";
+            case TokenType::tkn_NOT_EQUAL: return "!=";
+            case TokenType::tkn_LESS: return "<";
+            case TokenType::tkn_LESS_OR_EQUAL: return "<=";
+            case TokenType::tkn_MORE: return ">";
+            case TokenType::tkn_MORE_OR_EQUAL: return ">=";
+            case TokenType::tkn_AND: return "&&";
+            case TokenType::tkn_OR: return "||";
+            case TokenType::tkn_NOT: return "!";
+            case TokenType::tkn_ASSIGNMENT: return "=";
+            case TokenType::tkn_ASSIGNMENT_AFTER_ADDITION: return "+=";
+            case TokenType::tkn_ASSIGNMENT_AFTER_SUBTRACTION: return "-=";
+            case TokenType::tkn_ASSIGNMENT_AFTER_MULTIPLICATION: return "*=";
+            case TokenType::tkn_ASSIGNMENT_AFTER_SEGMENTATION: return "/=";
+            case TokenType::tkn_ASSIGNMENT_AFTER_MODULO: return "%=";
+            case TokenType::tkn_INCREMENT: return "++";
+            case TokenType::tkn_DECREMENT: return "--";
+            default: return token_type_to_string(op);
+        }
+    }
+
     SemanticAnalyzer::SemanticAnalyzer(const std::string& filename,
                                        const std::string& sourceCode)
     : symbolTable(std::make_unique<SymbolTable>()),
@@ -214,11 +242,78 @@ namespace semantic {
             return errorType;
         }
 
+        if (node->getOperator() == TokenType::tkn_MODULO) {
+            if (!leftType->isInteger()) {
+                SemanticError error(filename, node->getLine(), node->getColumn(),
+                                   SemanticErrorCode::INVALID_OPERATION,
+                                   "оператор '%' требует целочисленный левый операнд");
+                error.expectedType = nullptr;
+                error.actualType = leftType;
+                error.suggestion = "оператор % работает только с целыми числами (int)";
+                
+                std::string contextLine = getContextLine(node->getLine());
+                if (!contextLine.empty()) {
+                    error.setContext(contextLine, node->getColumn());
+                }
+                errorCollector->addError(error);
+                annotateNode(node, errorType);
+                return errorType;
+            }
+            if (!rightType->isInteger()) {
+                SemanticError error(filename, node->getLine(), node->getColumn(),
+                                   SemanticErrorCode::INVALID_OPERATION,
+                                   "оператор '%' требует целочисленный правый операнд");
+                error.expectedType = nullptr;
+                error.actualType = rightType;
+                error.suggestion = "оператор % работает только с целыми числами (int)";
+                
+                std::string contextLine = getContextLine(node->getLine());
+                if (!contextLine.empty()) {
+                    error.setContext(contextLine, node->getColumn());
+                }
+                errorCollector->addError(error);
+                annotateNode(node, errorType);
+                return errorType;
+            }
+        }
+
         Type* resultType = TypeChecker::getBinaryResultType(node->getOperator(), leftType, rightType);
 
         if (resultType->isError()) {
-            reportTypeMismatch(node->getLine(), node->getColumn(),
-                               nullptr, nullptr, "бинарной операции");
+            std::string opSymbol = operatorToSymbol(node->getOperator());
+            
+            if (node->getOperator() == TokenType::tkn_EQUAL ||
+                node->getOperator() == TokenType::tkn_NOT_EQUAL ||
+                node->getOperator() == TokenType::tkn_LESS ||
+                node->getOperator() == TokenType::tkn_LESS_OR_EQUAL ||
+                node->getOperator() == TokenType::tkn_MORE ||
+                node->getOperator() == TokenType::tkn_MORE_OR_EQUAL) {
+                
+                std::ostringstream msg;
+                msg << "оператор '" << opSymbol << "' не может применяться к типам ";
+                msg << leftType->toString() << " и " << rightType->toString();
+                msg << " (требуются числовые типы int или float)";
+                
+                SemanticError error(filename, node->getLine(), node->getColumn(),
+                                   SemanticErrorCode::TYPE_MISMATCH, msg.str());
+                error.expectedType = nullptr;
+                error.actualType = nullptr;
+                error.suggestion = "операторы сравнения работают только с числовыми типами (int или float)";
+                
+                std::string contextLine = getContextLine(node->getLine());
+                if (!contextLine.empty()) {
+                    error.setContext(contextLine, node->getColumn());
+                }
+                errorCollector->addError(error);
+            } else {
+                std::ostringstream msg;
+                msg << "недопустимая операция '" << opSymbol << "' для типов ";
+                msg << leftType->toString() << " и " << rightType->toString();
+                
+                reportTypeMismatch(node->getLine(), node->getColumn(),
+                                   nullptr, nullptr, msg.str());
+            }
+            
             annotateNode(node, errorType);
             return errorType;
         }
@@ -276,6 +371,41 @@ namespace semantic {
             return errorType;
         }
 
+        if (node->getOperator() == TokenType::tkn_ASSIGNMENT_AFTER_MODULO) {
+            if (!targetType->isInteger()) {
+                SemanticError error(filename, node->getLine(), node->getColumn(),
+                                   SemanticErrorCode::INVALID_OPERATION,
+                                   "оператор '%=' требует целочисленный левый операнд");
+                error.expectedType = nullptr;
+                error.actualType = targetType;
+                error.suggestion = "оператор %= работает только с целыми числами (int)";
+                
+                std::string contextLine = getContextLine(node->getLine());
+                if (!contextLine.empty()) {
+                    error.setContext(contextLine, node->getColumn());
+                }
+                errorCollector->addError(error);
+                annotateNode(node, errorType);
+                return errorType;
+            }
+            if (!valueType->isInteger()) {
+                SemanticError error(filename, node->getLine(), node->getColumn(),
+                                   SemanticErrorCode::INVALID_OPERATION,
+                                   "оператор '%=' требует целочисленный правый операнд");
+                error.expectedType = nullptr;
+                error.actualType = valueType;
+                error.suggestion = "оператор %= работает только с целыми числами (int)";
+                
+                std::string contextLine = getContextLine(node->getLine());
+                if (!contextLine.empty()) {
+                    error.setContext(contextLine, node->getColumn());
+                }
+                errorCollector->addError(error);
+                annotateNode(node, errorType);
+                return errorType;
+            }
+        }
+
         if (!TypeChecker::isAssignable(targetType, valueType)) {
             reportTypeMismatch(node->getLine(), node->getColumn(),
                                targetType, valueType, "присваивании");
@@ -288,9 +418,17 @@ namespace semantic {
                 node->getOperator(), targetType, valueType);
 
             if (opResultType->isError()) {
+                std::string opSymbol = operatorToSymbol(node->getOperator());
+                std::ostringstream msg;
+                msg << "недопустимая операция '" << opSymbol << "' для типов ";
+                msg << targetType->toString() << " и " << valueType->toString();
+                
+                if (node->getOperator() == TokenType::tkn_ASSIGNMENT_AFTER_MODULO) {
+                    msg << " (оператор %= требует целочисленные операнды)";
+                }
+                
                 reportTypeMismatch(node->getLine(), node->getColumn(),
-                                   targetType, valueType,
-                                   "составном присваивании");
+                                   targetType, valueType, msg.str());
                 annotateNode(node, errorType);
                 return errorType;
             }

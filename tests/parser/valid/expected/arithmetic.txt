@@ -1,37 +1,37 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> int
+Program [1:1]:
+  FunctionDecl [1:4]: test -> int
     body:
-      Block [line 1]:
-        VarDecl [line 2]: int a =
-          Binary [line 2]: ADD
-            left: Literal [line 2]: int 1
-            right: Literal [line 2]: int 2
-        VarDecl [line 3]: int b =
-          Binary [line 3]: SUB
-            left: Literal [line 3]: int 3
-            right: Literal [line 3]: int 4
-        VarDecl [line 4]: int c =
-          Binary [line 4]: MUL
-            left: Literal [line 4]: int 5
-            right: Literal [line 4]: int 6
-        VarDecl [line 5]: int d =
-          Binary [line 5]: DIV
-            left: Literal [line 5]: int 7
-            right: Literal [line 5]: int 8
-        VarDecl [line 6]: int e =
-          Binary [line 6]: MOD
-            left: Literal [line 6]: int 9
-            right: Literal [line 6]: int 4
-        VarDecl [line 7]: int f =
-          Unary [line 7]: SUB
-            Literal [line 7]: int 10
-        ReturnStmt [line 8]:
-          Binary [line 8]: SUB
-            left: Binary [line 8]: ADD
-            left:   left: Identifier [line 8]: a
-            left:   right: Identifier [line 8]: b
-            right: Binary [line 8]: DIV
-            right:   left: Binary [line 8]: MUL
-            right:   left:   left: Identifier [line 8]: c
-            right:   left:   right: Identifier [line 8]: d
-            right:   right: Identifier [line 8]: e
+      Block [1:18]:
+        VarDecl [2:9]: int a =
+          Binary [2:13]: ADD
+            left: Literal [2:13]: int 1
+            right: Literal [2:17]: int 2
+        VarDecl [3:9]: int b =
+          Binary [3:13]: SUB
+            left: Literal [3:13]: int 3
+            right: Literal [3:17]: int 4
+        VarDecl [4:9]: int c =
+          Binary [4:13]: MUL
+            left: Literal [4:13]: int 5
+            right: Literal [4:17]: int 6
+        VarDecl [5:9]: int d =
+          Binary [5:13]: DIV
+            left: Literal [5:13]: int 7
+            right: Literal [5:17]: int 8
+        VarDecl [6:9]: int e =
+          Binary [6:13]: MOD
+            left: Literal [6:13]: int 9
+            right: Literal [6:17]: int 4
+        VarDecl [7:9]: int f =
+          Unary [7:14]: SUB
+            Literal [7:14]: int 10
+        ReturnStmt [8:5]:
+          Binary [8:12]: SUB
+            left: Binary [8:12]: ADD
+            left:   left: Identifier [8:12]: a
+            left:   right: Identifier [8:16]: b
+            right: Binary [8:20]: DIV
+            right:   left: Binary [8:20]: MUL
+            right:   left:   left: Identifier [8:20]: c
+            right:   left:   right: Identifier [8:24]: d
+            right:   right: Identifier [8:28]: e

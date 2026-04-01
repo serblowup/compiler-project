@@ -1,30 +1,30 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> bool
+Program [1:1]:
+  FunctionDecl [1:4]: test -> bool
     body:
-      Block [line 1]:
-        VarDecl [line 2]: bool a =
-          Binary [line 2]: AND
-            left: Literal [line 2]: bool true
-            right: Literal [line 2]: bool false
-        VarDecl [line 3]: bool b =
-          Binary [line 3]: OR
-            left: Literal [line 3]: bool false
-            right: Literal [line 3]: bool true
-        VarDecl [line 4]: bool c =
-          Unary [line 4]: NOT
-            Literal [line 4]: bool true
-        VarDecl [line 5]: bool d =
-          Binary [line 5]: OR
-            left: Binary [line 5]: AND
-            left:   left: Unary [line 5]: NOT
-            left:   left:   Literal [line 5]: bool false
-            left:   right: Literal [line 5]: bool true
-            right: Literal [line 5]: bool false
-        ReturnStmt [line 6]:
-          Binary [line 6]: OR
-            left: Binary [line 6]: AND
-            left:   left: Identifier [line 6]: a
-            left:   right: Identifier [line 6]: b
-            right: Binary [line 6]: AND
-            right:   left: Identifier [line 6]: c
-            right:   right: Identifier [line 6]: d
+      Block [1:19]:
+        VarDecl [2:10]: bool a =
+          Binary [2:14]: AND
+            left: Literal [2:14]: bool true
+            right: Literal [2:22]: bool false
+        VarDecl [3:10]: bool b =
+          Binary [3:14]: OR
+            left: Literal [3:14]: bool false
+            right: Literal [3:23]: bool true
+        VarDecl [4:10]: bool c =
+          Unary [4:15]: NOT
+            Literal [4:15]: bool true
+        VarDecl [5:10]: bool d =
+          Binary [5:15]: OR
+            left: Binary [5:15]: AND
+            left:   left: Unary [5:15]: NOT
+            left:   left:   Literal [5:15]: bool false
+            left:   right: Literal [5:24]: bool true
+            right: Literal [5:32]: bool false
+        ReturnStmt [6:5]:
+          Binary [6:12]: OR
+            left: Binary [6:12]: AND
+            left:   left: Identifier [6:12]: a
+            left:   right: Identifier [6:17]: b
+            right: Binary [6:22]: AND
+            right:   left: Identifier [6:22]: c
+            right:   right: Identifier [6:27]: d

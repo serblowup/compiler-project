@@ -131,12 +131,24 @@ public:
     bool isFunction() const { return kind == TypeKind::FUNCTION; }
     bool isError() const { return kind == TypeKind::ERROR; }
     
-    bool isNumeric() const {
+    /*
+    * Арифметические тип для операций:
+    * - Сложение
+    * - Вычитание
+    * - Умножение
+    * - Деление
+    * (Неявное преобразование int в float)
+    */
+    bool isArithmetic() const {
         return kind == TypeKind::INT || kind == TypeKind::FLOAT;
     }
     
-    bool isArithmetic() const {
-        return kind == TypeKind::INT || kind == TypeKind::FLOAT;
+    /*
+    * Целочисленный тип для операций:
+    * - Взятие остатка (только int!)
+    */
+    bool isInteger() const {
+        return kind == TypeKind::INT;
     }
     
     std::shared_ptr<StructType> getStructInfo() const {

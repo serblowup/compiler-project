@@ -5,7 +5,7 @@
 
 std::string ProgramNode::toString() const {
     std::ostringstream oss;
-    oss << "Program [line " << line << "]:\n";
+    oss << "Program [" << line << ":" << column << "]:\n";
     for (const auto& decl : declarations) {
         std::string declStr = decl->toString();
         std::istringstream iss(declStr);
@@ -19,7 +19,7 @@ std::string ProgramNode::toString() const {
 
 std::string LiteralExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Literal [line " << line << "]";
+    oss << "Literal [" << line << ":" << column << "]";
     if (resolvedType) {
         oss << " [type: " << resolvedType->toString() << "]";
     }
@@ -55,7 +55,7 @@ std::string LiteralExprNode::toString() const {
 
 std::string IdentifierExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Identifier [line " << line << "]";
+    oss << "Identifier [" << line << ":" << column << "]";
     if (resolvedType) {
         oss << " [type: " << resolvedType->toString() << "]";
     }
@@ -65,7 +65,7 @@ std::string IdentifierExprNode::toString() const {
 
 std::string BinaryExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Binary [line " << line << "]";
+    oss << "Binary [" << line << ":" << column << "]";
     if (resolvedType) {
         oss << " [type: " << resolvedType->toString() << "]";
     }
@@ -90,7 +90,7 @@ std::string BinaryExprNode::toString() const {
 
 std::string UnaryExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Unary [line " << line << "]";
+    oss << "Unary [" << line << ":" << column << "]";
     if (resolvedType) {
         oss << " [type: " << resolvedType->toString() << "]";
     }
@@ -108,7 +108,7 @@ std::string UnaryExprNode::toString() const {
 
 std::string CallExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Call [line " << line << "]";
+    oss << "Call [" << line << ":" << column << "]";
     if (resolvedType) {
         oss << " [type: " << resolvedType->toString() << "]";
     }
@@ -138,7 +138,7 @@ std::string CallExprNode::toString() const {
 
 std::string AssignmentExprNode::toString() const {
     std::ostringstream oss;
-    oss << "Assignment [line " << line << "]";
+    oss << "Assignment [" << line << ":" << column << "]";
     if (resolvedType) {
         oss << " [type: " << resolvedType->toString() << "]";
     }
@@ -163,7 +163,7 @@ std::string AssignmentExprNode::toString() const {
 
 std::string BlockStmtNode::toString() const {
     std::ostringstream oss;
-    oss << "Block [line " << line << "]:\n";
+    oss << "Block [" << line << ":" << column << "]:\n";
     
     for (const auto& stmt : statements) {
         std::string stmtStr = stmt->toString();
@@ -179,7 +179,7 @@ std::string BlockStmtNode::toString() const {
 
 std::string ExprStmtNode::toString() const {
     std::ostringstream oss;
-    oss << "ExprStmt [line " << line << "]:\n";
+    oss << "ExprStmt [" << line << ":" << column << "]:\n";
     
     std::string exprStr = expression->toString();
     std::istringstream iss(exprStr);
@@ -193,7 +193,7 @@ std::string ExprStmtNode::toString() const {
 
 std::string IfStmtNode::toString() const {
     std::ostringstream oss;
-    oss << "IfStmt [line " << line << "]:\n";
+    oss << "IfStmt [" << line << ":" << column << "]:\n";
     
     std::string condStr = condition->toString();
     std::istringstream condIss(condStr);
@@ -225,7 +225,7 @@ std::string IfStmtNode::toString() const {
 
 std::string WhileStmtNode::toString() const {
     std::ostringstream oss;
-    oss << "WhileStmt [line " << line << "]:\n";
+    oss << "WhileStmt [" << line << ":" << column << "]:\n";
     
     std::string condStr = condition->toString();
     std::istringstream condIss(condStr);
@@ -247,7 +247,7 @@ std::string WhileStmtNode::toString() const {
 
 std::string ForStmtNode::toString() const {
     std::ostringstream oss;
-    oss << "ForStmt [line " << line << "]:\n";
+    oss << "ForStmt [" << line << ":" << column << "]:\n";
     
     if (init) {
         oss << "  init:\n";
@@ -290,7 +290,7 @@ std::string ForStmtNode::toString() const {
 
 std::string ReturnStmtNode::toString() const {
     std::ostringstream oss;
-    oss << "ReturnStmt [line " << line << "]";
+    oss << "ReturnStmt [" << line << ":" << column << "]";
     if (value && value->getType()) {
         oss << " [type: " << value->getType()->toString() << "]";
     }
@@ -313,7 +313,7 @@ std::string ReturnStmtNode::toString() const {
 
 std::string VarDeclStmtNode::toString() const {
     std::ostringstream oss;
-    oss << "VarDecl [line " << line << "]: " << type << " " << name;
+    oss << "VarDecl [" << line << ":" << column << "]: " << type << " " << name;
     if (initializer && initializer->getType()) {
         oss << " [type: " << initializer->getType()->toString() << "]";
     }
@@ -335,13 +335,13 @@ std::string VarDeclStmtNode::toString() const {
 
 std::string ParamNode::toString() const {
     std::ostringstream oss;
-    oss << "Param [line " << line << "]: " << type << " " << name;
+    oss << "Param [" << line << ":" << column << "]: " << type << " " << name;
     return oss.str();
 }
 
 std::string FunctionDeclNode::toString() const {
     std::ostringstream oss;
-    oss << "FunctionDecl [line " << line << "]: " << name << " -> " << returnType;
+    oss << "FunctionDecl [" << line << ":" << column << "]: " << name << " -> " << returnType;
     if (body && body->getStatements().empty()) {
         oss << " [no body]";
     }
@@ -372,7 +372,7 @@ std::string FunctionDeclNode::toString() const {
 
 std::string StructDeclNode::toString() const {
     std::ostringstream oss;
-    oss << "StructDecl [line " << line << "]: " << name << "\n";
+    oss << "StructDecl [" << line << ":" << column << "]: " << name << "\n";
     
     if (!fields.empty()) {
         oss << "  fields:\n";

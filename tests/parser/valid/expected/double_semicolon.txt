@@ -1,8 +1,8 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> int
+Program [1:1]:
+  FunctionDecl [1:4]: test -> int
     body:
-      Block [line 1]:
-        VarDecl [line 2]: int x =
-          Literal [line 2]: int 5
-        ReturnStmt [line 3]:
-          Identifier [line 3]: x
+      Block [1:18]:
+        VarDecl [2:9]: int x =
+          Literal [2:13]: int 5
+        ReturnStmt [3:5]:
+          Identifier [3:12]: x

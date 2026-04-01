@@ -1,28 +1,28 @@
-Program [line 1]:
-  FunctionDecl [line 1]: test -> int
+Program [1:1]:
+  FunctionDecl [1:4]: test -> int
     body:
-      Block [line 1]:
-        VarDecl [line 2]: int sum =
-          Literal [line 2]: int 0
-        ForStmt [line 3]:
+      Block [1:18]:
+        VarDecl [2:9]: int sum =
+          Literal [2:15]: int 0
+        ForStmt [3:5]:
           init:
-            VarDecl [line 3]: int i =
-              Literal [line 3]: int 0
-          condition: Binary [line 3]: LT
-          condition:   left: Identifier [line 3]: i
-          condition:   right: Literal [line 3]: int 5
-          update: Assignment [line 3]: ASSIGN
-          update:   target: Identifier [line 3]: i
-          update:   value: Binary [line 3]: ADD
-          update:   value:   left: Identifier [line 3]: i
-          update:   value:   right: Literal [line 3]: int 1
+            VarDecl [3:14]: int i =
+              Literal [3:18]: int 0
+          condition: Binary [3:21]: LT
+          condition:   left: Identifier [3:21]: i
+          condition:   right: Literal [3:25]: int 5
+          update: Assignment [3:28]: ASSIGN
+          update:   target: Identifier [3:28]: i
+          update:   value: Binary [3:32]: ADD
+          update:   value:   left: Identifier [3:32]: i
+          update:   value:   right: Literal [3:36]: int 1
           body:
-            Block [line 3]:
-              ExprStmt [line 4]:
-                Assignment [line 4]: ASSIGN
-                  target: Identifier [line 4]: sum
-                  value: Binary [line 4]: ADD
-                  value:   left: Identifier [line 4]: sum
-                  value:   right: Identifier [line 4]: i
-        ReturnStmt [line 6]:
-          Identifier [line 6]: sum
+            Block [3:39]:
+              ExprStmt [4:9]:
+                Assignment [4:9]: ASSIGN
+                  target: Identifier [4:9]: sum
+                  value: Binary [4:15]: ADD
+                  value:   left: Identifier [4:15]: sum
+                  value:   right: Identifier [4:21]: i
+        ReturnStmt [6:5]:
+          Identifier [6:12]: sum
