@@ -42,27 +42,4 @@ public:
     virtual void visitAssignmentExprNode(AssignmentExprNode* node) = 0;
 };
 
-class ConstASTVisitor {
-public:
-    virtual ~ConstASTVisitor() = default;
-    
-    virtual void visitProgramNode(const ProgramNode* node) = 0;
-    virtual void visitFunctionDeclNode(const FunctionDeclNode* node) = 0;
-    virtual void visitStructDeclNode(const StructDeclNode* node) = 0;
-    virtual void visitParamNode(const ParamNode* node) = 0;
-    virtual void visitBlockStmtNode(const BlockStmtNode* node) = 0;
-    virtual void visitVarDeclStmtNode(const VarDeclStmtNode* node) = 0;
-    virtual void visitIfStmtNode(const IfStmtNode* node) = 0;
-    virtual void visitWhileStmtNode(const WhileStmtNode* node) = 0;
-    virtual void visitForStmtNode(const ForStmtNode* node) = 0;
-    virtual void visitReturnStmtNode(const ReturnStmtNode* node) = 0;
-    virtual void visitExprStmtNode(const ExprStmtNode* node) = 0;
-    virtual void visitBinaryExprNode(const BinaryExprNode* node) = 0;
-    virtual void visitUnaryExprNode(const UnaryExprNode* node) = 0;
-    virtual void visitLiteralExprNode(const LiteralExprNode* node) = 0;
-    virtual void visitIdentifierExprNode(const IdentifierExprNode* node) = 0;
-    virtual void visitCallExprNode(const CallExprNode* node) = 0;
-    virtual void visitAssignmentExprNode(const AssignmentExprNode* node) = 0;
-};
-
 #endif
