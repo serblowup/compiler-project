@@ -8,6 +8,7 @@
 #include "../semantic/type.hpp"
 #include <stack>
 #include <unordered_map>
+#include <set>
 
 namespace ir {
 
@@ -23,6 +24,10 @@ private:
     int temp_counter;
     int label_counter;
     
+    // SSA: версионирование переменных
+    std::unordered_map<std::string, int> var_versions;
+    std::unordered_map<std::string, std::stack<std::string>> version_stacks;
+    
     // Стек для результатов выражений
     std::stack<Operand> expr_stack;
     
@@ -36,6 +41,12 @@ private:
     // Вспомогательные методы
     std::string newTemp();
     std::string newLabel();
+    
+    // SSA-методы для работы с версиями
+    std::string getCurrentVersion(const std::string& var);
+    std::string newVersion(const std::string& var);
+    void pushVersion(const std::string& var);
+    void popVersion(const std::string& var);
     
     void emit(std::unique_ptr<Instruction> instr);
     void emit(InstrKind kind, const Operand& dest, const Operand& src1);

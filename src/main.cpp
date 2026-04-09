@@ -286,7 +286,7 @@ int run_check(const std::string& input_file, const std::string& output_file,
 }
 
 int run_ir_generator(const std::string& input_file, const std::string& output_file,
-                     const std::string& ir_format, bool optimize, bool stats, bool verbose, int max_errors) {
+                     const std::string& ir_format, bool optimize, bool stats, bool verbose) {
     try {
         if (!FileIO::exists(input_file)) {
             std::cerr << "[IR] Ошибка: Входной файл '" << input_file << "' не найден\n";
@@ -333,7 +333,7 @@ int run_ir_generator(const std::string& input_file, const std::string& output_fi
         }
 
         Parser parser(tokens, input_file, processed_source);
-        parser.setMaxErrorCount(max_errors);
+        parser.setMaxErrorCount(100);
         std::unique_ptr<ProgramNode> ast = parser.parse();
 
         if (parser.hasErrors()) {
@@ -449,7 +449,7 @@ int main(int argc, char* argv[]) {
         }
         return run_ir_generator(options.input_file, options.output_file,
                                 options.ir_format, options.ir_optimize, options.ir_stats,
-                                options.verbose, options.max_errors);
+                                options.verbose);
     }
     else {
         std::cerr << "Неизвестная команда: " << options.command << "\n";

@@ -51,6 +51,12 @@ public:
         // Удаление избыточных MOVE
         int redundant_move = 0;
         
+        // SSA-специфичные оптимизации
+        int const_propagation = 0;
+        int copy_propagation = 0;
+        int redundant_phis = 0;
+        int unreachable_code = 0;
+        
         // Метрики
         int total_instructions_removed = 0;
         int temporaries_reduced = 0;
@@ -64,6 +70,7 @@ public:
     IROptimizer();
     
     void optimize(IRProgram* program);
+    void optimizeSSA(IRProgram* program);
     
     const OptimizationReport& getReport() const;
     
@@ -72,6 +79,7 @@ private:
     int original_instruction_count;
     
     void optimizeFunction(IRFunction* func);
+    void optimizeSSAFunction(IRFunction* func);
     
     // Оптимизации
     bool algebraicSimplify(Instruction* instr);
@@ -80,6 +88,12 @@ private:
     bool deadCodeEliminate(BasicBlock* block, size_t idx);
     bool jumpChaining(BasicBlock* block, size_t idx);
     bool eliminateRedundantMoves(IRFunction* func);
+    
+    // SSA-специфичные оптимизации
+    bool constantPropagation(IRFunction* func);
+    bool copyPropagation(IRFunction* func);
+    bool eliminateRedundantPhis(IRFunction* func);
+    bool removeUnreachableBlocks(IRFunction* func);
     
     // Вспомогательные методы
     bool isZero(const Operand& op);
@@ -90,6 +104,7 @@ private:
     bool isUsed(const std::string& temp_name, BasicBlock* block, size_t start_idx);
     void replaceAllUses(const std::string& old_temp, const std::string& new_temp,
                         BasicBlock* block, size_t start_idx);
+    bool isConstantValue(const Operand& op, int& value);
     
     // Подсчёт метрик
     int countInstructions(IRProgram* program);

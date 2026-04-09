@@ -3,30 +3,26 @@
 
 function factorial: int (n: int)
   entry:
-      STORE 1, [result]
-      STORE 1, [i]
+      result_1 = 1
+      i_1 = 1
       JUMP L1
   L1:
-      LOAD t1, [i]
-      LOAD t2, [n]
-      t3 = CMP_LE t1, t2
-      JUMP_IF_NOT t3, L3
+      i_2 = PHI (i_1, entry), (i_3, L2)
+      result_2 = PHI (result_1, entry), (result_3, L2)
+      t1 = CMP_LE i_2, n_1
+      JUMP_IF_NOT t1, L3
       JUMP L2
   L2:
-      LOAD t4, [result]
-      LOAD t5, [i]
-      t6 = MUL t4, t5
-      STORE t6, [result]
-      LOAD t7, [i]
-      t8 = ADD t7, 1
-      STORE t8, [i]
+      t2 = MUL result_2, i_2
+      result_3 = t2
+      t3 = ADD i_2, 1
+      i_3 = t3
       JUMP L1
   L3:
-      LOAD t9, [result]
-      RETURN t9
+      RETURN result_2
 
 function main: int ()
   entry:
-      t10 = CALL [factorial], 5
-      RETURN t10
+      t4 = CALL factorial, 5
+      RETURN t4
 

@@ -20,6 +20,8 @@ std::string IRPrinter::escapeDOT(const std::string& str) {
             case '\n': result += "\\n"; break;
             case '\r': result += "\\r"; break;
             case '\t': result += "\\t"; break;
+            case '<': result += "&lt;"; break;
+            case '>': result += "&gt;"; break;
             default: result += c;
         }
     }
@@ -31,8 +33,10 @@ std::string IRPrinter::toDot(IRProgram* program) {
     
     std::ostringstream oss;
     oss << "digraph CFG {\n";
-    oss << "  node [shape=box, fontname=\"Courier\", fontsize=10];\n";
-    oss << "  edge [fontname=\"Courier\", fontsize=8];\n\n";
+    oss << "  node [shape=plaintext, fontname=\"Courier New\", fontsize=10];\n";
+    oss << "  edge [fontname=\"Courier New\", fontsize=8];\n";
+    oss << "  rankdir=TD;\n";
+    oss << "  splines=ortho;\n\n";
     
     int cluster_num = 0;
     
@@ -46,16 +50,24 @@ std::string IRPrinter::toDot(IRProgram* program) {
         for (const auto& block : func->getBlocks()) {
             std::string block_label = block->getLabel();
             
-            // Содержимое блока
-            std::string content;
+            oss << "    " << block_label << " [label=<\n";
+            oss << "      <table border=\"0\" cellborder=\"1\" cellspacing=\"0\" cellpadding=\"4\">\n";
+            oss << "        <tr><td bgcolor=\"#4A90D9\" align=\"left\" cellpadding=\"4\">\n";
+            oss << "          <font color=\"white\"><b>" << escapeDOT(block_label) << ":</b></font>\n";
+            oss << "        </td></tr>\n";
+            
             for (const auto& instr : block->getInstructions()) {
-                if (!content.empty()) content += "\\l";
-                content += instr->toString();
+                std::string instr_str = instr->toString();
+                for (char& c : instr_str) {
+                    if (c == '<') c = '[';
+                    if (c == '>') c = ']';
+                }
+                oss << "        <tr><td align=\"left\" bgcolor=\"white\">" 
+                    << escapeDOT(instr_str) << "</font></td></tr>\n";
             }
             
-            oss << "    " << block_label << " [label=\"" 
-                << escapeDOT(block_label) << ":\\l" 
-                << escapeDOT(content) << "\", shape=box];\n";
+            oss << "      </table>\n";
+            oss << "    >, shape=plaintext];\n";
         }
         
         oss << "\n";
@@ -238,7 +250,7 @@ std::string IRPrinter::getStats(IRProgram* program) {
     return stats.toString();
 }
 
-// Дополнительно: вывод с комментариями исходного кода
+// Вывод с комментариями исходного кода
 std::string IRPrinter::toStringWithSource(IRProgram* program, const std::string& source) {
     std::ostringstream oss;
     oss << "# IR Program\n";

@@ -4,27 +4,13 @@
 function main: int ()
   entry:
       t1 = 8
-      STORE t1, [a]
       t2 = 6
-      STORE t2, [b]
       t3 = 42
-      STORE t3, [c]
       t4 = 5
-      STORE t4, [d]
       t5 = 2
-      STORE t5, [e]
-      t6 = false
-      STORE t6, [f]
-      t7 = true
-      STORE t7, [g]
-      LOAD t8, [a]
-      LOAD t9, [b]
-      t10 = ADD t8, t9
-      LOAD t11, [c]
-      t12 = ADD t10, t11
-      LOAD t13, [d]
-      t14 = ADD t12, t13
-      LOAD t15, [e]
-      t16 = ADD t14, t15
-      RETURN t16
+      t8 = ADD t1, t2
+      t9 = ADD t8, t3
+      t10 = ADD t9, t4
+      t11 = ADD t10, t5
+      RETURN t11
 

@@ -3,23 +3,13 @@
 
 function test: int (x: int)
   entry:
-      LOAD t1, [x]
-      t2 = ADD t1, 5
-      STORE t2, [a]
-      LOAD t3, [a]
-      t4 = ADD t3, t3
-      STORE t4, [b]
-      LOAD t5, [x]
-      t6 = SUB t5, 3
-      STORE t6, [c]
-      LOAD t7, [b]
-      t8 = ADD t7, 1
-      STORE t8, [d]
-      LOAD t9, [d]
-      RETURN t9
+      t1 = ADD x_1, 5
+      t2 = ADD t1, t1
+      t4 = ADD t2, 1
+      RETURN t4
 
 function main: int ()
   entry:
-      t10 = CALL [test], 10
-      RETURN t10
+      t5 = CALL test, 10
+      RETURN t5
 

@@ -3,19 +3,13 @@
 
 function main: bool ()
   entry:
-      STORE true, [a]
-      STORE false, [b]
-      LOAD t1, [a]
-      LOAD t2, [b]
-      t3 = AND t1, t2
-      STORE t3, [c]
-      LOAD t4, [a]
-      LOAD t5, [b]
-      t6 = OR t4, t5
-      STORE t6, [d]
-      LOAD t7, [a]
-      t8 = NOT t7
-      STORE t8, [e]
-      LOAD t9, [d]
-      RETURN t9
+      a_1 = true
+      b_1 = false
+      t1 = AND a_1, b_1
+      c_1 = t1
+      t2 = OR a_1, b_1
+      d_1 = t2
+      t3 = NOT a_1
+      e_1 = t3
+      RETURN d_1
 

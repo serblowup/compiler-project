@@ -84,7 +84,6 @@ void CLI::print_usage(const char* program_name) {
     std::cerr << "  --optimize                     - включить peephole оптимизации\n";
     std::cerr << "  --stats                        - показать статистику IR\n";
     std::cerr << "  --verbose                      - подробный вывод\n";
-    std::cerr << "  --max-errors <число>           - максимальное количество ошибок (по умолчанию: 100)\n";
     std::cerr << "\nОбщие опции:\n";
     std::cerr << "  --input <файл>     - входной файл\n";
     std::cerr << "  --output <файл>    - выходной файл\n";

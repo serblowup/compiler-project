@@ -3,6 +3,8 @@
 #include <sstream>
 #include <iomanip>
 #include <unordered_set>
+#include <queue>
+#include <set>
 
 namespace ir {
 
@@ -21,12 +23,19 @@ std::string IROptimizer::OptimizationReport::toString() const {
     
     int total_const_fold = const_fold_arith + const_fold_logic + const_fold_not;
     
+    int total_ssa_opt = const_propagation + copy_propagation + redundant_phis + unreachable_code;
+    
     oss << "Алгебраические упрощения:     " << total_alg_simpl << "\n";
     oss << "Свёртка констант:             " << total_const_fold << "\n";
     oss << "Упрощение силы операций:      " << mul_to_add << "\n";
     oss << "Удаление мёртвого кода:       " << (dead_move + dead_load + dead_arith) << "\n";
     oss << "Сцепление переходов:          " << (jump_to_next + jump_chain) << "\n";
-    oss << "Удаление избыточных MOVE:     " << redundant_move << "\n\n";
+    oss << "Удаление избыточных MOVE:     " << redundant_move << "\n";
+    oss << "SSA-оптимизации:              " << total_ssa_opt << "\n";
+    oss << "  - распространение констант: " << const_propagation << "\n";
+    oss << "  - распространение копий:    " << copy_propagation << "\n";
+    oss << "  - удаление избыточных Phi:  " << redundant_phis << "\n";
+    oss << "  - удаление недостижимого:   " << unreachable_code << "\n\n";
     
     oss << "Метрики:\n";
     oss << "  Удалено инструкций:         " << total_instructions_removed << "\n";
@@ -49,21 +58,49 @@ void IROptimizer::OptimizationReport::calculateMetrics(int original_instruction_
 void IROptimizer::optimize(IRProgram* program) {
     if (!program) return;
     
-    // Сохраняем исходное состояние для метрик
     original_instruction_count = countInstructions(program);
     int original_temporaries = countTemporaries(program);
     
     report = OptimizationReport();
-    int iteration = 0;
     
     for (const auto& func : program->getFunctions()) {
         optimizeFunction(func.get());
     }
     
-    // Вычисляем метрики
     int new_temporaries = countTemporaries(program);
     report.temporaries_reduced = original_temporaries - new_temporaries;
-    report.optimization_iterations = iteration;
+    report.calculateMetrics(original_instruction_count);
+}
+
+// SSA-оптимизации
+void IROptimizer::optimizeSSA(IRProgram* program) {
+    if (!program) return;
+    
+    original_instruction_count = countInstructions(program);
+    int original_temporaries = countTemporaries(program);
+    
+    report = OptimizationReport();
+    bool changed = true;
+    int iteration = 0;
+    const int MAX_ITERATIONS = 10;
+    
+    while (changed && iteration < MAX_ITERATIONS) {
+        changed = false;
+        
+        for (const auto& func : program->getFunctions()) {
+            if (constantPropagation(func.get())) changed = true;
+            if (copyPropagation(func.get())) changed = true;
+            if (eliminateRedundantPhis(func.get())) changed = true;
+            if (removeUnreachableBlocks(func.get())) changed = true;
+            if (eliminateRedundantMoves(func.get())) changed = true;
+        }
+        
+        iteration++;
+        report.optimization_iterations++;
+    }
+    
+    int new_temporaries = countTemporaries(program);
+    report.temporaries_reduced = original_temporaries - new_temporaries;
     report.calculateMetrics(original_instruction_count);
 }
 
@@ -162,9 +199,17 @@ bool IROptimizer::isFalse(const Operand& op) {
     return false;
 }
 
+bool IROptimizer::isConstantValue(const Operand& op, int& value) {
+    if (op.kind == OperandKind::CONST_INT) {
+        value = op.int_value;
+        return true;
+    }
+    return false;
+}
+
 // Свёртка констант
 bool IROptimizer::constantFold(Instruction* instr) {
-    // Арифметическая свёртка: 3 + 4 → 7
+    // Арифметическая свёртка
     if (instr->kind == InstrKind::ADD ||
         instr->kind == InstrKind::SUB ||
         instr->kind == InstrKind::MUL ||
@@ -222,7 +267,7 @@ bool IROptimizer::constantFold(Instruction* instr) {
         }
     }
     
-    // Логическая свёртка: true && false → false
+    // Логическая свёртка
     if (instr->kind == InstrKind::AND || instr->kind == InstrKind::OR) {
         if (instr->src1.isConstant() && instr->src2.isConstant()) {
             bool left = isTrue(instr->src1);
@@ -238,7 +283,7 @@ bool IROptimizer::constantFold(Instruction* instr) {
         }
     }
     
-    // NOT true → false, NOT false → true
+    // NOT true - false; NOT false - true
     if (instr->kind == InstrKind::NOT && instr->src1.isConstant()) {
         bool val = isTrue(instr->src1);
         instr->kind = InstrKind::MOVE;
@@ -263,7 +308,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // 0 + x → x
+    // 0 + x - x
     if (instr->kind == InstrKind::ADD && isZero(instr->src1)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src2;
@@ -272,7 +317,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // x * 1 → x
+    // x * 1 - x
     if (instr->kind == InstrKind::MUL && isOne(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src1;
@@ -281,7 +326,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // 1 * x → x
+    // 1 * x - x
     if (instr->kind == InstrKind::MUL && isOne(instr->src1)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src2;
@@ -290,7 +335,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // x * 0 → 0
+    // x * 0 - 0
     if (instr->kind == InstrKind::MUL && isZero(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = Operand::ConstInt(0);
@@ -300,7 +345,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // 0 * x → 0
+    // 0 * x - 0
     if (instr->kind == InstrKind::MUL && isZero(instr->src1)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = Operand::ConstInt(0);
@@ -310,7 +355,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // x - 0 → x
+    // x - 0 - x
     if (instr->kind == InstrKind::SUB && isZero(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src1;
@@ -319,7 +364,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // x - x → 0
+    // x - x - 0
     if (instr->kind == InstrKind::SUB && instr->src1.toString() == instr->src2.toString()) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = Operand::ConstInt(0);
@@ -329,7 +374,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // x / 1 → x
+    // x / 1 - x
     if (instr->kind == InstrKind::DIV && isOne(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src1;
@@ -338,7 +383,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // CMP_GT x, 0 → x
+    // CMP_GT x, 0 - x
     if (instr->kind == InstrKind::CMP_GT && isZero(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src1;
@@ -347,7 +392,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // CMP_EQ x, 0 → NOT x
+    // CMP_EQ x, 0 - NOT x
     if (instr->kind == InstrKind::CMP_EQ && isZero(instr->src2)) {
         instr->kind = InstrKind::NOT;
         instr->src1 = instr->src1;
@@ -356,7 +401,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // CMP_NE x, 0 → x
+    // CMP_NE x, 0 - x
     if (instr->kind == InstrKind::CMP_NE && isZero(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src1;
@@ -365,7 +410,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // AND x, true → x
+    // AND x, true - x
     if (instr->kind == InstrKind::AND && isTrue(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src1;
@@ -374,7 +419,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // AND true, x → x
+    // AND true, x - x
     if (instr->kind == InstrKind::AND && isTrue(instr->src1)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src2;
@@ -383,7 +428,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // AND x, false → false
+    // AND x, false - false
     if (instr->kind == InstrKind::AND && isFalse(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = Operand::ConstBool(false);
@@ -393,7 +438,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // AND false, x → false
+    // AND false, x - false
     if (instr->kind == InstrKind::AND && isFalse(instr->src1)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = Operand::ConstBool(false);
@@ -403,7 +448,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // OR x, false → x
+    // OR x, false - x
     if (instr->kind == InstrKind::OR && isFalse(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src1;
@@ -412,7 +457,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // OR false, x → x
+    // OR false, x - x
     if (instr->kind == InstrKind::OR && isFalse(instr->src1)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = instr->src2;
@@ -421,7 +466,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // OR x, true → true
+    // OR x, true - true
     if (instr->kind == InstrKind::OR && isTrue(instr->src2)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = Operand::ConstBool(true);
@@ -431,7 +476,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
         return true;
     }
     
-    // OR true, x → true
+    // OR true, x - true
     if (instr->kind == InstrKind::OR && isTrue(instr->src1)) {
         instr->kind = InstrKind::MOVE;
         instr->src1 = Operand::ConstBool(true);
@@ -446,7 +491,7 @@ bool IROptimizer::algebraicSimplify(Instruction* instr) {
 
 // Упрощение силы операций
 bool IROptimizer::strengthReduce(Instruction* instr) {
-    // x * 2 → x + x
+    // x * 2 - x + x
     if (instr->kind == InstrKind::MUL && isTwo(instr->src2)) {
         instr->kind = InstrKind::ADD;
         instr->src2 = instr->src1;
@@ -454,7 +499,7 @@ bool IROptimizer::strengthReduce(Instruction* instr) {
         return true;
     }
     
-    // 2 * x → x + x
+    // 2 * x - x + x
     if (instr->kind == InstrKind::MUL && isTwo(instr->src1)) {
         instr->kind = InstrKind::ADD;
         instr->src1 = instr->src2;
@@ -493,7 +538,7 @@ bool IROptimizer::deadCodeEliminate(BasicBlock* block, size_t idx) {
     // Не удаляем терминирующие инструкции
     if (instr->isTerminator()) return false;
     
-    // Не удаляем STORE (имеет побочный эффект)
+    // Не удаляем STORE
     if (instr->kind == InstrKind::STORE) return false;
     
     // MOVE с временной переменной
@@ -545,7 +590,7 @@ bool IROptimizer::jumpChaining(BasicBlock* block, size_t idx) {
     Instruction* curr = instrs[idx].get();
     Instruction* next = instrs[idx + 1].get();
     
-    // JUMP L1; LABEL L1: → удаляем JUMP
+    // JUMP L1; LABEL L1: - удаляем JUMP
     if (curr->kind == InstrKind::JUMP && next->kind == InstrKind::LABEL) {
         if (curr->target_label == next->dest.name) {
             instrs.erase(instrs.begin() + idx);
@@ -555,7 +600,7 @@ bool IROptimizer::jumpChaining(BasicBlock* block, size_t idx) {
         }
     }
     
-    // JUMP L1; JUMP L2 → заменяем на JUMP L2
+    // JUMP L1; JUMP L2 - заменяем на JUMP L2
     if (curr->kind == InstrKind::JUMP && next->kind == InstrKind::JUMP) {
         curr->target_label = next->target_label;
         instrs.erase(instrs.begin() + idx + 1);
@@ -604,7 +649,6 @@ bool IROptimizer::eliminateRedundantMoves(IRFunction* func) {
         for (size_t i = 0; i < instrs.size(); ++i) {
             Instruction* instr = instrs[i].get();
             
-            // MOVE t_dest, t_src
             if (instr->kind == InstrKind::MOVE && 
                 instr->dest.kind == OperandKind::TEMP &&
                 instr->src1.kind == OperandKind::TEMP &&
@@ -613,16 +657,195 @@ bool IROptimizer::eliminateRedundantMoves(IRFunction* func) {
                 std::string dest_name = instr->dest.name;
                 std::string src_name = instr->src1.name;
                 
-                // Заменяем все использования dest_name на src_name
                 replaceAllUses(dest_name, src_name, block.get(), i);
                 
-                // Удаляем избыточный MOVE
                 instrs.erase(instrs.begin() + i);
                 changed = true;
                 report.redundant_move++;
                 report.total_instructions_removed++;
                 i--;
             }
+        }
+    }
+    
+    return changed;
+}
+
+// Распространение констант
+bool IROptimizer::constantPropagation(IRFunction* func) {
+    bool changed = false;
+    std::unordered_map<std::string, int> constants;
+    
+    for (const auto& block : func->getBlocks()) {
+        for (const auto& instr : block->getInstructions()) {
+            if (instr->kind == InstrKind::MOVE && 
+                instr->src1.isConstant() &&
+                instr->dest.kind == OperandKind::TEMP) {
+                
+                int value;
+                if (isConstantValue(instr->src1, value)) {
+                    constants[instr->dest.name] = value;
+                }
+            }
+            
+            if (instr->kind == InstrKind::PHI && instr->dest.kind == OperandKind::TEMP) {
+                bool all_const = true;
+                int const_value = 0;
+                bool first = true;
+                
+                for (size_t j = 0; j < instr->args.size(); j += 2) {
+                    int val;
+                    if (!isConstantValue(instr->args[j], val)) {
+                        all_const = false;
+                        break;
+                    }
+                    if (first) {
+                        const_value = val;
+                        first = false;
+                    } else if (val != const_value) {
+                        all_const = false;
+                        break;
+                    }
+                }
+                
+                if (all_const && !first) {
+                    constants[instr->dest.name] = const_value;
+                }
+            }
+            
+            if (instr->src1.kind == OperandKind::TEMP) {
+                auto it = constants.find(instr->src1.name);
+                if (it != constants.end()) {
+                    instr->src1 = Operand::ConstInt(it->second);
+                    report.const_propagation++;
+                    changed = true;
+                }
+            }
+            
+            if (instr->src2.kind == OperandKind::TEMP) {
+                auto it = constants.find(instr->src2.name);
+                if (it != constants.end()) {
+                    instr->src2 = Operand::ConstInt(it->second);
+                    report.const_propagation++;
+                    changed = true;
+                }
+            }
+        }
+    }
+    
+    return changed;
+}
+
+// Распространение копий
+bool IROptimizer::copyPropagation(IRFunction* func) {
+    bool changed = false;
+    std::unordered_map<std::string, std::string> copies;
+    
+    for (const auto& block : func->getBlocks()) {
+        for (const auto& instr : block->getInstructions()) {
+            if (instr->kind == InstrKind::MOVE &&
+                instr->dest.kind == OperandKind::TEMP &&
+                instr->src1.kind == OperandKind::TEMP) {
+                
+                copies[instr->dest.name] = instr->src1.name;
+            }
+            
+            if (instr->src1.kind == OperandKind::TEMP) {
+                auto it = copies.find(instr->src1.name);
+                if (it != copies.end()) {
+                    instr->src1 = Operand::Temp(it->second);
+                    report.copy_propagation++;
+                    changed = true;
+                }
+            }
+            
+            if (instr->src2.kind == OperandKind::TEMP) {
+                auto it = copies.find(instr->src2.name);
+                if (it != copies.end()) {
+                    instr->src2 = Operand::Temp(it->second);
+                    report.copy_propagation++;
+                    changed = true;
+                }
+            }
+        }
+    }
+    
+    return changed;
+}
+
+// Удаление избыточных Phi-функций
+bool IROptimizer::eliminateRedundantPhis(IRFunction* func) {
+    bool changed = false;
+    
+    for (const auto& block : func->getBlocks()) {
+        auto& instrs = block->getInstructionsMutable();
+        
+        for (size_t i = 0; i < instrs.size(); ++i) {
+            Instruction* instr = instrs[i].get();
+            
+            if (instr->kind != InstrKind::PHI) continue;
+            
+            bool all_same = true;
+            std::string first_val;
+            
+            for (size_t j = 0; j < instr->args.size(); j += 2) {
+                std::string val = instr->args[j].toString();
+                if (j == 0) {
+                    first_val = val;
+                } else if (val != first_val) {
+                    all_same = false;
+                    break;
+                }
+            }
+            
+            if (all_same && !first_val.empty()) {
+                // Заменяем Phi на MOVE
+                instr->kind = InstrKind::MOVE;
+                instr->src1 = Operand::Temp(first_val);
+                instr->args.clear();
+                report.redundant_phis++;
+                report.total_instructions_removed++;
+                changed = true;
+            }
+        }
+    }
+    
+    return changed;
+}
+
+// Удаление недостижимых блоков
+bool IROptimizer::removeUnreachableBlocks(IRFunction* func) {
+    bool changed = false;
+    std::set<BasicBlock*> reachable;
+    std::queue<BasicBlock*> queue;
+    
+    BasicBlock* entry = func->getEntryBlock();
+    if (entry) {
+        queue.push(entry);
+        reachable.insert(entry);
+    }
+    
+    while (!queue.empty()) {
+        BasicBlock* block = queue.front();
+        queue.pop();
+        
+        for (BasicBlock* succ : block->getSuccessors()) {
+            if (reachable.find(succ) == reachable.end()) {
+                reachable.insert(succ);
+                queue.push(succ);
+            }
+        }
+    }
+    
+    auto& blocks = func->getBlocksMutable();
+    for (auto it = blocks.begin(); it != blocks.end();) {
+        if (reachable.find(it->get()) == reachable.end()) {
+            it = blocks.erase(it);
+            changed = true;
+            report.unreachable_code++;
+            report.total_instructions_removed++;
+        } else {
+            ++it;
         }
     }
     

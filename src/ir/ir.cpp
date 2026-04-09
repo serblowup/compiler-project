@@ -165,8 +165,9 @@ std::string Instruction::toString() const {
     // PHI
     if (kind == InstrKind::PHI) {
         oss << dest.toString() << " = PHI";
-        for (const auto& arg : args) {
-            oss << ", " << arg.toString();
+        for (size_t i = 0; i < args.size(); i += 2) {
+            if (i > 0) oss << ",";
+            oss << " (" << args[i].toString() << ", " << args[i+1].toString() << ")";
         }
         return oss.str();
     }
@@ -313,6 +314,11 @@ const std::vector<LocalVarInfo>& IRFunction::getLocalVars() const {
 }
 
 const std::vector<std::unique_ptr<BasicBlock>>& IRFunction::getBlocks() const {
+    return blocks;
+}
+
+// Реализация метода для получения не-const доступа к блокам
+std::vector<std::unique_ptr<BasicBlock>>& IRFunction::getBlocksMutable() {
     return blocks;
 }
 

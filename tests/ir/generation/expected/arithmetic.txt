@@ -4,23 +4,18 @@
 function main: int ()
   entry:
       t1 = ADD 5, 3
-      STORE t1, [a]
+      a_1 = t1
       t2 = SUB 10, 4
-      STORE t2, [b]
+      b_1 = t2
       t3 = MUL 6, 7
-      STORE t3, [c]
+      c_1 = t3
       t4 = DIV 20, 4
-      STORE t4, [d]
+      d_1 = t4
       t5 = MOD 17, 5
-      STORE t5, [e]
-      LOAD t6, [a]
-      LOAD t7, [b]
-      t8 = ADD t6, t7
-      LOAD t9, [c]
-      LOAD t10, [d]
-      t11 = MUL t9, t10
-      LOAD t12, [e]
-      t13 = DIV t11, t12
-      t14 = SUB t8, t13
-      RETURN t14
+      e_1 = t5
+      t6 = ADD a_1, b_1
+      t7 = MUL c_1, d_1
+      t8 = DIV t7, e_1
+      t9 = SUB t6, t8
+      RETURN t9
 

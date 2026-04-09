@@ -3,29 +3,27 @@
 
 function test: int (x: int)
   entry:
-      LOAD t1, [x]
-      t2 = CMP_GT t1, 0
-      JUMP_IF_NOT t2, L2
+      t1 = CMP_GT x_1, 0
+      JUMP_IF_NOT t1, L2
       JUMP L1
   L1:
       RETURN
-      JUMP L3
   L2:
-      LOAD t3, [x]
-      t4 = CMP_LT t3, 0
-      JUMP_IF_NOT t4, L5
+      JUMP L3
+  L3:
+      t2 = CMP_LT x_1, 0
+      JUMP_IF_NOT t2, L5
       JUMP L4
   L4:
-      t5 = NEG 1
-      RETURN t5
-      JUMP L6
+      t3 = NEG 1
+      RETURN t3
   L5:
-      RETURN
+      JUMP L6
   L6:
-  L3:
+      RETURN
 
 function main: int ()
   entry:
-      t6 = CALL [test], 5
-      RETURN t6
+      t4 = CALL test, 5
+      RETURN t4
 

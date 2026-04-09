@@ -3,32 +3,19 @@
 
 function main: bool ()
   entry:
-      STORE 10, [x]
-      STORE 20, [y]
-      LOAD t1, [x]
-      LOAD t2, [y]
-      t3 = CMP_EQ t1, t2
-      STORE t3, [eq]
-      LOAD t4, [x]
-      LOAD t5, [y]
-      t6 = CMP_NE t4, t5
-      STORE t6, [ne]
-      LOAD t7, [x]
-      LOAD t8, [y]
-      t9 = CMP_LT t7, t8
-      STORE t9, [lt]
-      LOAD t10, [x]
-      LOAD t11, [y]
-      t12 = CMP_LE t10, t11
-      STORE t12, [le]
-      LOAD t13, [x]
-      LOAD t14, [y]
-      t15 = CMP_GT t13, t14
-      STORE t15, [gt]
-      LOAD t16, [x]
-      LOAD t17, [y]
-      t18 = CMP_GE t16, t17
-      STORE t18, [ge]
-      LOAD t19, [eq]
-      RETURN t19
+      x_1 = 10
+      y_1 = 20
+      t1 = CMP_EQ x_1, y_1
+      eq_1 = t1
+      t2 = CMP_NE x_1, y_1
+      ne_1 = t2
+      t3 = CMP_LT x_1, y_1
+      lt_1 = t3
+      t4 = CMP_LE x_1, y_1
+      le_1 = t4
+      t5 = CMP_GT x_1, y_1
+      gt_1 = t5
+      t6 = CMP_GE x_1, y_1
+      ge_1 = t6
+      RETURN eq_1
 

@@ -3,30 +3,26 @@
 
 function sum: int (n: int)
   entry:
-      STORE 0, [s]
-      STORE 1, [i]
+      s_1 = 0
+      i_1 = 1
       JUMP L1
   L1:
-      LOAD t1, [i]
-      LOAD t2, [n]
-      t3 = CMP_LE t1, t2
-      JUMP_IF_NOT t3, L3
+      i_2 = PHI (i_1, entry), (i_3, L2)
+      s_2 = PHI (s_1, entry), (s_3, L2)
+      t1 = CMP_LE i_2, n_1
+      JUMP_IF_NOT t1, L3
       JUMP L2
   L2:
-      LOAD t4, [s]
-      LOAD t5, [i]
-      t6 = ADD t4, t5
-      STORE t6, [s]
-      LOAD t7, [i]
-      t8 = ADD t7, 1
-      STORE t8, [i]
+      t2 = ADD s_2, i_2
+      s_3 = t2
+      t3 = ADD i_2, 1
+      i_3 = t3
       JUMP L1
   L3:
-      LOAD t9, [s]
-      RETURN t9
+      RETURN s_2
 
 function main: int ()
   entry:
-      t10 = CALL [sum], 10
-      RETURN t10
+      t4 = CALL sum, 10
+      RETURN t4
 

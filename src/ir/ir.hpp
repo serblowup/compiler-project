@@ -198,6 +198,8 @@ public:
     BasicBlock* getEntryBlock() const;
     int getStackSize() const;
     
+    std::vector<std::unique_ptr<BasicBlock>>& getBlocksMutable();
+    
     std::string toString() const;
 };
 
