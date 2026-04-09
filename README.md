@@ -36,6 +36,9 @@ make test-parser
 # Запуск семантических тестов
 make test-semantic
 
+# Запуск тестов промежуточного представления
+make test-ir
+
 # Запуск интеграционных тестов
 make test-integration
 
@@ -43,9 +46,9 @@ make test-integration
 make coverage
 ```
 
-### Использование
+## Использование
 
-#### Команды лексера и препроцессора
+### Команды лексера и препроцессора
 ```bash
 # Запуск лексера
 ./compiler lex --input <файл> --output <файл>
@@ -54,13 +57,13 @@ make coverage
 ./compiler preprocess --input <файл> --output <файл>
 ```
 
-#### Команды парсера
+### Команды парсера
 ```bash
 # Запуск парсера
 ./compiler parse --input <файл> --output <файл> [опции]
 ```
 
-##### Опции парсера
+#### Опции парсера
 
 | Опция | Описание |
 |-------|----------|
@@ -68,13 +71,13 @@ make coverage
 | `--verbose` | Подробный вывод процесса разбора |
 | `--max-errors <число>` | Максимальное количество ошибок (по умолчанию - 100) |
 
-#### Команды семантического анализа
+### Команды семантического анализа
 ```bash
 # Запуск семантического анализа
 ./compiler check --input <файл> --output <файл> [опции]
 ```
 
-##### Опции семантического анализа
+#### Опции семантического анализа
 
 | Опция | Описание |
 |-------|----------|
@@ -85,9 +88,31 @@ make coverage
 | `--verbose` | Подробный вывод (включает отчёт о валидации) |
 | `--max-errors <число>` | Максимальное количество ошибок (по умолчанию - 100) |
 
-### Примеры
+### Команды генерации промежуточного представления
+```bash
+# Запуск генерации промежуточного представления
+./compiler ir --input <файл> --output <файл> [опции]
+```
 
-#### Лексер и препроцессор
+#### Опции генерации промежуточного представления
+
+| Опция | Описание |
+|-------|----------|
+| `--ir-format text/dot/json` | Формат вывода IR (по умолчанию - txt) |
+| `--optimize` | Включить оптимизации |
+| `--stats` | Показать статистику IR |
+| `--verbose` | Подробный вывод |
+| `--max-errors <число>` | Максимальное количество ошибок (по умолчанию - 100) |
+
+#### Форматы вывода IR
+
+- **text** — человекочитаемый текстовый формат
+- **dot** — формат Graphviz для визуализации графа потока управления (CFG)
+- **json** — машиночитаемый JSON формат
+
+## Примеры
+
+### Лексер и препроцессор
 ```bash
 # Лексический анализ
 ./compiler lex --input examples/hello.src --output tokens.txt
@@ -96,7 +121,7 @@ make coverage
 ./compiler preprocess --input examples/hello.src --output hello_srs.txt
 ```
 
-#### Парсер
+### Парсер
 ```bash
 # Парсер выводит AST в текстовом формате
 ./compiler parse --input examples/factorial.src --output ast.txt
@@ -114,7 +139,7 @@ dot -Tpng ast.dot -o ast.png
 ./compiler parse --input examples/hello.src --verbose --max-errors 50 --output ast.txt
 ```
 
-#### Семантический анализ
+### Семантический анализ
 ```bash
 # Семантический анализ
 ./compiler check --input examples/factorial.src --output result.txt
@@ -132,24 +157,41 @@ dot -Tpng ast.dot -o ast.png
 ./compiler check --input examples/factorial.src --dump-symbols --symbol-format json --output symbols.json
 ```
 
-#### Спецификация языка
+### Генерация IR
+```bash
+# Генерация IR в текстовом формате
+./compiler ir --input examples/factorial.src --output factorial.ir
 
-Лексическая грамматика описана в файле docs/language_spec.md.
+# Генерация IR с оптимизациями
+./compiler ir --input examples/factorial.src --output factorial_opt.ir --optimize
 
-#### Грамматика языка
+# Генерация IR со статистикой
+./compiler ir --input examples/factorial.src --output factorial_stats.ir --stats
 
-LL(1)-грамматика языка описана в файле docs/grammar.md.
+# Генерация IR в формате DOT для визуализации CFG
+./compiler ir --input examples/factorial.src --output factorial.dot --ir-format dot
 
-#### Семантический анализ
+# Визуализация CFG с помощью Graphviz
+dot -Tpng factorial.dot -o factorial_cfg.png
 
-Описание семантического анализа находится в файле docs/semantic.md.
+# Генерация IR в формате JSON
+./compiler ir --input examples/factorial.src --output factorial.json --ir-format json
+```
 
-##### Структура проекта
+## Документация
+
+- Спецификация языка (docs/language_spec.md)
+- Грамматика языка (docs/grammar.md)
+- Семантический анализ (docs/semantic.md)
+- Промежуточное представление (docs/ir.md)
+
+## Структура проекта
 
 ```
 compiler-project/
 ├── docs # Документация
 │   ├── grammar.md
+│   ├── ir.md
 │   ├── language_spec.md
 │   └── semantic.md
 ├── examples # Примеры исходного кода
@@ -159,6 +201,15 @@ compiler-project/
 ├── Makefile # Makefile
 ├── README.md # Readme
 ├── src
+│   ├── ir # Промежуточное представление
+│   │   ├── ir.cpp
+│   │   ├── ir_generator.cpp
+│   │   ├── ir_generator.hpp
+│   │   ├── ir.hpp
+│   │   ├── ir_optimizer.cpp
+│   │   ├── ir_optimizer.hpp
+│   │   ├── ir_printer.cpp
+│   │   └── ir_printer.hpp
 │   ├── lexer # Лексер
 │   │   ├── lexer.cpp
 │   │   ├── lexer.hpp
@@ -191,6 +242,41 @@ compiler-project/
 │       ├── file_io.cpp
 │       └── file_io.hpp
 └── tests
+    ├── ir # Тесты промежуточного представления
+    │   ├── generation
+    │   │   ├── arithmetic.src
+    │   │   ├── comparisons.src
+    │   │   ├── expected
+    │   │   │   ├── arithmetic.txt
+    │   │   │   ├── comparisons.txt
+    │   │   │   ├── factorial.txt
+    │   │   │   ├── for.txt
+    │   │   │   ├── functions.txt
+    │   │   │   ├── if_else.txt
+    │   │   │   ├── logical.txt
+    │   │   │   └── while.txt
+    │   │   ├── factorial.src
+    │   │   ├── for.src
+    │   │   ├── functions.src
+    │   │   ├── if_else.src
+    │   │   ├── logical.src
+    │   │   └── while.src
+    │   ├── optimization
+    │   │   ├── algebraic_simplify.src
+    │   │   ├── constant_folding.src
+    │   │   ├── dead_code.src
+    │   │   └── expected
+    │   │       ├── algebraic_simplify.txt
+    │   │       ├── constant_folding.txt
+    │   │       └── dead_code.txt
+    │   └── validation
+    │       ├── expected
+    │       │   ├── type_mismatch.txt
+    │       │   ├── undeclared_variable.txt
+    │       │   └── wrong_operator_types.txt
+    │       ├── type_mismatch.src
+    │       ├── undeclared_variable.src
+    │       └── wrong_operator_types.src
     ├── lexer # Тесты лексера
     │   ├── invalid
     │   │   ├── expected
@@ -312,6 +398,7 @@ compiler-project/
     │   ├── check_coverage.sh
     │   ├── run_all_tests.sh
     │   ├── test_integration.sh
+    │   ├── test_ir.sh
     │   ├── test_lexer.sh
     │   ├── test_parser.sh
     │   ├── test_preprocessor.sh

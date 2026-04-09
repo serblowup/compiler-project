@@ -8,6 +8,9 @@
 #include "parser/ast_visualizer.hpp"
 #include "preprocessor/preprocessor.hpp"
 #include "semantic/semantic_analyzer.hpp"
+#include "ir/ir_generator.hpp"
+#include "ir/ir_printer.hpp"
+#include "ir/ir_optimizer.hpp"
 #include "utils/cli.hpp"
 #include "utils/file_io.hpp"
 
@@ -282,6 +285,119 @@ int run_check(const std::string& input_file, const std::string& output_file,
     }
 }
 
+int run_ir_generator(const std::string& input_file, const std::string& output_file,
+                     const std::string& ir_format, bool optimize, bool stats, bool verbose, int max_errors) {
+    try {
+        if (!FileIO::exists(input_file)) {
+            std::cerr << "[IR] Ошибка: Входной файл '" << input_file << "' не найден\n";
+            return 1;
+        }
+
+        std::string source = FileIO::read(input_file);
+
+        if (verbose) {
+            std::cout << "[IR] Чтение файла: " << input_file << "\n";
+        }
+
+        Preprocessor preprocessor(source);
+        std::string processed_source = preprocessor.process();
+
+        if (preprocessor.has_errors()) {
+            std::cerr << preprocessor.get_errors();
+            return 1;
+        }
+
+        if (verbose) {
+            std::cout << "[IR] Препроцессор завершен\n";
+        }
+
+        Lexer lexer(processed_source);
+        std::vector<Token> tokens;
+
+        while (true) {
+            Token token = lexer.lexer_next_token();
+            tokens.push_back(token);
+
+            if (token.type == TokenType::TOKEN_END_OF_FILE) {
+                break;
+            }
+
+            if (token.type == TokenType::TOKEN_ERROR) {
+                std::cerr << "[Lexer] Ошибка: " << token.lexeme << "\n";
+                return 1;
+            }
+        }
+
+        if (verbose) {
+            std::cout << "[IR] Лексер завершен. Получено " << tokens.size() - 1 << " токенов\n";
+        }
+
+        Parser parser(tokens, input_file, processed_source);
+        parser.setMaxErrorCount(max_errors);
+        std::unique_ptr<ProgramNode> ast = parser.parse();
+
+        if (parser.hasErrors()) {
+            return 1;
+        }
+
+        semantic::SemanticAnalyzer analyzer(input_file, processed_source);
+        analyzer.analyze(ast.get());
+
+        if (analyzer.hasErrors()) {
+            std::cerr << analyzer.getAllErrors();
+            return 1;
+        }
+
+        if (verbose) {
+            std::cout << "[IR] Семантический анализ завершен\n";
+        }
+
+        ir::IRGenerator generator(analyzer.getSymbolTable());
+        ir::IRProgram* program = generator.generate(ast.get());
+
+        if (optimize) {
+            if (verbose) {
+                std::cout << "[IR] Выполнение оптимизаций...\n";
+            }
+            ir::IROptimizer optimizer;
+            optimizer.optimize(program);
+            if (verbose) {
+                std::cout << optimizer.getReport().toString();
+            }
+        }
+
+        std::string output;
+        
+        if (ir_format == "dot") {
+            output = ir::IRPrinter::toDot(program);
+        } else if (ir_format == "json") {
+            output = ir::IRPrinter::toJSON(program);
+        } else {
+            output = ir::IRPrinter::toString(program);
+        }
+
+        if (stats) {
+            output += "\n" + ir::IRPrinter::getStats(program);
+        }
+
+        if (output_file.empty() || output_file == "/dev/stdout") {
+            std::cout << output;
+        } else {
+            FileIO::write(output, output_file);
+            if (verbose) {
+                std::cout << "[IR] Результат сохранен в: " << output_file << "\n";
+            }
+        }
+
+        delete program;
+        return 0;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[IR] Ошибка: " << e.what() << "\n";
+        return 1;
+    }
+}
+
 int main(int argc, char* argv[]) {
     CommandLineOptions options = CLI::parse(argc, argv);
 
@@ -325,6 +441,15 @@ int main(int argc, char* argv[]) {
         return run_check(options.input_file, options.output_file,
                         options.ast_format, options.verbose, options.max_errors,
                         options.dump_symbols, options.show_types, options.symbol_format);
+    }
+    else if (options.command == "ir") {
+        if (options.input_file.empty()) {
+            CLI::print_usage(argv[0]);
+            return 1;
+        }
+        return run_ir_generator(options.input_file, options.output_file,
+                                options.ir_format, options.ir_optimize, options.ir_stats,
+                                options.verbose, options.max_errors);
     }
     else {
         std::cerr << "Неизвестная команда: " << options.command << "\n";

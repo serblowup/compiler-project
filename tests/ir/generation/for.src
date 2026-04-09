@@ -1,0 +1,12 @@
+fn sum(int n) -> int {
+    int s = 0;
+    int i;
+    for (i = 1; i <= n; i = i + 1) {
+        s = s + i;
+    }
+    return s;
+}
+
+fn main() -> int {
+    return sum(10);
+}

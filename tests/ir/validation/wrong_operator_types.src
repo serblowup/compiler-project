@@ -1,0 +1,6 @@
+fn main() -> int {
+    int x = 10;
+    bool y = true;
+    int z = x % y;
+    return z;
+}

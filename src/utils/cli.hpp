@@ -20,6 +20,10 @@ struct CommandLineOptions {
     bool show_types;
     std::string symbol_format;
     
+    bool ir_optimize;
+    bool ir_stats;
+    std::string ir_format;
+    
     CommandLineOptions() 
         : command(""), 
           input_file(""), 
@@ -32,7 +36,10 @@ struct CommandLineOptions {
           max_errors(100),
           dump_symbols(false),
           show_types(false),
-          symbol_format("text") {}
+          symbol_format("text"),
+          ir_optimize(false),
+          ir_stats(false),
+          ir_format("text") {}
 };
 
 class CLI {

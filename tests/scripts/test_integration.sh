@@ -52,7 +52,41 @@ for test_file in "$INTEGRATION_DIR"/*.src; do
             FAILED=$((FAILED + 1))
         else
             echo "  Семантический анализ: успешно (AST с типами сохранен в $sem_output_file)"
-            PASSED=$((PASSED + 1))
+            
+            ir_output_file="test_output/integration/${basename}_ir.txt"
+            ir_error_file="test_output/integration/${basename}_ir.err"
+            
+            ./compiler ir --input "$test_file" --output "$ir_output_file" 2> "$ir_error_file"
+            
+            if [ -s "$ir_error_file" ]; then
+                echo "  Ошибка при генерации IR для $filename"
+                echo "    Сообщение об ошибке:"
+                cat "$ir_error_file" | sed 's/^/      /'
+                FAILED=$((FAILED + 1))
+            elif [ ! -f "$ir_output_file" ]; then
+                echo "  IR не создан для $filename"
+                FAILED=$((FAILED + 1))
+            else
+                echo "  IR: успешно (IR сохранен в $ir_output_file)"
+                
+                ir_opt_output_file="test_output/integration/${basename}_ir_opt.txt"
+                ir_opt_error_file="test_output/integration/${basename}_ir_opt.err"
+                
+                ./compiler ir --input "$test_file" --output "$ir_opt_output_file" --optimize 2> "$ir_opt_error_file"
+                
+                if [ -s "$ir_opt_error_file" ]; then
+                    echo "  Ошибка при генерации IR с оптимизациями для $filename"
+                    echo "    Сообщение об ошибке:"
+                    cat "$ir_opt_error_file" | sed 's/^/      /'
+                    FAILED=$((FAILED + 1))
+                elif [ ! -f "$ir_opt_output_file" ]; then
+                    echo "  IR с оптимизациями не создан для $filename"
+                    FAILED=$((FAILED + 1))
+                else
+                    echo "  IR с оптимизациями: успешно (IR сохранен в $ir_opt_output_file)"
+                    PASSED=$((PASSED + 1))
+                fi
+            fi
         fi
     fi
 done

@@ -16,7 +16,8 @@ SOURCES = $(wildcard $(SRCDIR)/*.cpp) \
           $(wildcard $(SRCDIR)/parser/*.cpp) \
           $(wildcard $(SRCDIR)/preprocessor/*.cpp) \
           $(wildcard $(SRCDIR)/semantic/*.cpp) \
-          $(wildcard $(SRCDIR)/utils/*.cpp)
+          $(wildcard $(SRCDIR)/utils/*.cpp) \
+          $(wildcard $(SRCDIR)/ir/*.cpp)
 
 ifeq ($(wildcard $(SRCDIR)/semantic/*.cpp),)
     SOURCES += $(SRCDIR)/semantic/semantic_analyzer.cpp
@@ -27,7 +28,7 @@ OBJECTS_COV = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR_COV)/%.o,$(SOURCES))
 
 .PHONY: all clean build test scripts coverage coverage-simple \
         test-lexer test-preproc test-parser test-parser-valid test-parser-invalid test-roundtrip test-integration \
-        test-semantic lexer preprocess parse check
+        test-semantic test-ir lexer preprocess parse check
 
 all: $(TARGET)
 
@@ -90,6 +91,10 @@ test-semantic: scripts $(TARGET)
 	@if [ -d "tests/semantic/invalid" ]; then \
 		./tests/scripts/test_semantic.sh tests/semantic/invalid tests/semantic/invalid/expected "SEMANTIC-INVALID"; \
 	fi
+
+# Запуск тестов IR
+test-ir: scripts $(TARGET)
+	@./tests/scripts/test_ir.sh
 
 # Запуск тестов с coverage
 coverage: scripts build-cov
@@ -162,10 +167,37 @@ coverage: scripts build-cov
 		done \
 	fi
 
+	@if [ -d "tests/ir/generation" ]; then \
+		for test_file in tests/ir/generation/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				echo "Запуск $$test_file"; \
+				./$(TARGET_COV) ir --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
+	@if [ -d "tests/ir/optimization" ]; then \
+		for test_file in tests/ir/optimization/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				echo "Запуск $$test_file"; \
+				./$(TARGET_COV) ir --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" --optimize > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
+	@if [ -d "tests/ir/validation" ]; then \
+		for test_file in tests/ir/validation/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				echo "Запуск $$test_file"; \
+				./$(TARGET_COV) ir --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
 	@for test_file in examples/*.src; do \
 		if [ -f "$$test_file" ]; then \
 			echo "Запуск $$test_file"; \
-			./$(TARGET_COV) check --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+			./$(TARGET_COV) ir --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
 		fi \
 	done
 
@@ -259,9 +291,31 @@ coverage-simple:
 		done \
 	fi
 
+	@if [ -d "tests/ir/generation" ]; then \
+		for test_file in tests/ir/generation/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				./$(TARGET_COV) ir --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+	@if [ -d "tests/ir/optimization" ]; then \
+		for test_file in tests/ir/optimization/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				./$(TARGET_COV) ir --input "$$test_file" --output /dev/null --optimize > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+	@if [ -d "tests/ir/validation" ]; then \
+		for test_file in tests/ir/validation/*.src; do \
+			if [ -f "$$test_file" ]; then \
+				./$(TARGET_COV) ir --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+			fi \
+		done \
+	fi
+
 	@for test_file in examples/*.src; do \
 		if [ -f "$$test_file" ]; then \
-			./$(TARGET_COV) check --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+			./$(TARGET_COV) ir --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
 		fi \
 	done
 
@@ -327,6 +381,29 @@ check: $(TARGET)
 	fi
 	@if [ -n "$(SYMBOL_FORMAT)" ]; then \
 		CMD="$$CMD --symbol-format $(SYMBOL_FORMAT)"; \
+	fi
+	@if [ -n "$(VERBOSE)" ] && [ "$(VERBOSE)" = "1" ]; then \
+		CMD="$$CMD --verbose"; \
+	fi
+	@echo "Выполнение: $$CMD"
+	@$$CMD
+
+# Запуск генератора IR на отдельном файле
+ir: $(TARGET)
+	@if [ -z "$(INPUT)" ] || [ -z "$(OUTPUT)" ]; then \
+		echo "Использование: make ir INPUT=<файл> OUTPUT=<файл> [IR_FORMAT=text|dot|json] [OPTIMIZE=1] [STATS=1]"; \
+		echo "Пример: make ir INPUT=examples/factorial.src OUTPUT=factorial.ir IR_FORMAT=text OPTIMIZE=1 STATS=1"; \
+		exit 1; \
+	fi
+	@CMD="./$(TARGET) ir --input $(INPUT) --output $(OUTPUT)"
+	@if [ -n "$(IR_FORMAT)" ]; then \
+		CMD="$$CMD --ir-format $(IR_FORMAT)"; \
+	fi
+	@if [ -n "$(OPTIMIZE)" ] && [ "$(OPTIMIZE)" = "1" ]; then \
+		CMD="$$CMD --optimize"; \
+	fi
+	@if [ -n "$(STATS)" ] && [ "$(STATS)" = "1" ]; then \
+		CMD="$$CMD --stats"; \
 	fi
 	@if [ -n "$(VERBOSE)" ] && [ "$(VERBOSE)" = "1" ]; then \
 		CMD="$$CMD --verbose"; \

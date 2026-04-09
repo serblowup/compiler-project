@@ -76,6 +76,11 @@ echo "Тесты семантического анализа"
 run_test_suite "./tests/scripts/test_semantic.sh" "tests/semantic/valid" "tests/semantic/valid/expected" "SEMANTIC-VALID"
 run_test_suite "./tests/scripts/test_semantic.sh" "tests/semantic/invalid" "tests/semantic/invalid/expected" "SEMANTIC-INVALID"
 
+# Тесты IR (генерация и оптимизации в одном скрипте)
+echo "Тесты IR"
+run_test_suite "./tests/scripts/test_ir.sh" "tests/ir/generation" "tests/ir/generation/expected" "IR-GENERATION"
+run_test_suite "./tests/scripts/test_ir.sh" "tests/ir/optimization" "tests/ir/optimization/expected" "IR-OPTIMIZATION"
+
 # Интеграционные тесты
 echo "Интеграционные тесты"
 run_integration_tests "./tests/scripts/test_integration.sh"

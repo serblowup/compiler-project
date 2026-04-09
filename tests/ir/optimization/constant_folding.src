@@ -1,0 +1,10 @@
+fn main() -> int {
+    int a = 5 + 3;
+    int b = 10 - 4;
+    int c = 6 * 7;
+    int d = 20 / 4;
+    int e = 17 % 5;
+    bool f = true && false;
+    bool g = true || false;
+    return a + b + c + d + e;
+}

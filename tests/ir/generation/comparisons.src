@@ -1,0 +1,11 @@
+fn main() -> bool {
+    int x = 10;
+    int y = 20;
+    bool eq = x == y;
+    bool ne = x != y;
+    bool lt = x < y;
+    bool le = x <= y;
+    bool gt = x > y;
+    bool ge = x >= y;
+    return eq;
+}
