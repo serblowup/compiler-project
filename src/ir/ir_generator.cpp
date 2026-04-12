@@ -447,7 +447,7 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
         std::string phi_version = getCurrentVersion(var);
         phi_versions[var] = phi_version;
         
-        // Создаём Phi-инструкцию
+        // Создаем Phi-инструкцию
         auto phi_instr = std::make_unique<Instruction>(InstrKind::PHI);
         phi_instr->dest = Operand::Temp(phi_version);
         phi_instr->args.push_back(Operand::Temp(pre_version));
@@ -791,6 +791,12 @@ void IRGenerator::visitFunctionDeclNode(FunctionDeclNode* node) {
     var_versions.clear();
     version_stacks.clear();
     
+    // Создаём entry блок
+    current_block = current_function->createBlock("entry");
+    current_function->setEntryBlock(current_block);
+    
+    // Добавляем параметры с правильной инициализацией
+    int param_index = 0;
     for (const auto& param : node->getParameters()) {
         semantic::Type* param_type = nullptr;
         std::string param_type_str = param->getType();
@@ -811,14 +817,26 @@ void IRGenerator::visitFunctionDeclNode(FunctionDeclNode* node) {
         
         current_function->addParameter(param->getName(), param_type);
         
+        // Создаём версию _0 для параметра
         pushVersion(param->getName());
+        std::string versioned_name = getCurrentVersion(param->getName());
+        
+        // Добавляем PARAM инструкцию
+        auto param_instr = std::make_unique<Instruction>(InstrKind::PARAM);
+        param_instr->src1 = Operand::ConstInt(param_index++);
+        param_instr->src2 = Operand::Temp(versioned_name);
+        current_block->addInstruction(std::move(param_instr));
     }
-    
-    current_block = current_function->createBlock("entry");
-    current_function->setEntryBlock(current_block);
 
+    // Генерируем тело функции
     if (node->getBody()) {
         node->getBody()->accept(this);
+    }
+    
+    // Добавляем неявный RETURN для void функций
+    if (ret_type_str == "void") {
+        auto ret_instr = std::make_unique<Instruction>(InstrKind::RETURN);
+        current_block->addInstruction(std::move(ret_instr));
     }
     
     program->addFunction(std::move(func));

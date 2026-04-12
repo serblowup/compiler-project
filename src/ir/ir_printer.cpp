@@ -20,8 +20,6 @@ std::string IRPrinter::escapeDOT(const std::string& str) {
             case '\n': result += "\\n"; break;
             case '\r': result += "\\r"; break;
             case '\t': result += "\\t"; break;
-            case '<': result += "&lt;"; break;
-            case '>': result += "&gt;"; break;
             default: result += c;
         }
     }
@@ -49,21 +47,30 @@ std::string IRPrinter::toDot(IRProgram* program) {
         // Узлы для каждого базового блока
         for (const auto& block : func->getBlocks()) {
             std::string block_label = block->getLabel();
+            std::string node_name = func->getName() + "_" + block_label;
             
-            oss << "    " << block_label << " [label=<\n";
+            oss << "    " << node_name << " [label=<\n";
             oss << "      <table border=\"0\" cellborder=\"1\" cellspacing=\"0\" cellpadding=\"4\">\n";
-            oss << "        <tr><td bgcolor=\"#4A90D9\" align=\"left\" cellpadding=\"4\">\n";
-            oss << "          <font color=\"white\"><b>" << escapeDOT(block_label) << ":</b></font>\n";
-            oss << "        </td></tr>\n";
             
+            // Заголовок блока
+            oss << "        <tr>\n";
+            oss << "          <td bgcolor=\"#4A90D9\" align=\"left\" cellpadding=\"4\">\n";
+            oss << "            <font color=\"white\"><b>" << escapeDOT(block_label) << ":</b></font>\n";
+            oss << "           </td>\n";
+            oss << "        </tr>\n";
+            
+            // Инструкции
             for (const auto& instr : block->getInstructions()) {
                 std::string instr_str = instr->toString();
+                // Заменяем проблемные символы для HTML
                 for (char& c : instr_str) {
                     if (c == '<') c = '[';
                     if (c == '>') c = ']';
+                    if (c == '&') c = '+';
                 }
-                oss << "        <tr><td align=\"left\" bgcolor=\"white\">" 
-                    << escapeDOT(instr_str) << "</font></td></tr>\n";
+                oss << "        <tr>\n";
+                oss << "          <td align=\"left\" bgcolor=\"white\">" << escapeDOT(instr_str) << "</td>\n";
+                oss << "        </tr>\n";
             }
             
             oss << "      </table>\n";
@@ -74,9 +81,10 @@ std::string IRPrinter::toDot(IRProgram* program) {
         
         // Рёбра между блоками
         for (const auto& block : func->getBlocks()) {
+            std::string from_name = func->getName() + "_" + block->getLabel();
             for (BasicBlock* succ : block->getSuccessors()) {
-                oss << "    " << block->getLabel() << " -> " 
-                    << succ->getLabel() << ";\n";
+                std::string to_name = func->getName() + "_" + succ->getLabel();
+                oss << "    " << from_name << " -> " << to_name << ";\n";
             }
         }
         
@@ -195,7 +203,6 @@ std::string IRPrinter::Stats::toString() const {
     
     oss << "  Instruction breakdown:\n";
     
-    // Список инструкций в порядке значимости
     std::vector<std::pair<InstrKind, int>> sorted;
     for (const auto& pair : instr_counts) {
         sorted.push_back(pair);
@@ -225,7 +232,6 @@ IRPrinter::Stats IRPrinter::collectStats(IRProgram* program) {
             for (const auto& instr : block->getInstructions()) {
                 stats.addInstr(instr->kind);
                 
-                // Собираем временные переменные
                 if (instr->dest.kind == OperandKind::TEMP) {
                     temp_uses[instr->dest.name]++;
                 }
@@ -250,13 +256,11 @@ std::string IRPrinter::getStats(IRProgram* program) {
     return stats.toString();
 }
 
-// Вывод с комментариями исходного кода
 std::string IRPrinter::toStringWithSource(IRProgram* program, const std::string& source) {
     std::ostringstream oss;
     oss << "# IR Program\n";
     oss << "# Source:\n";
     
-    // Добавляем исходный код
     std::istringstream source_iss(source);
     std::string line;
     int line_num = 1;
