@@ -372,8 +372,8 @@ echo $?  # Выведет: 30
 ## Структура проекта
 
 ```
-compiler-project/ # Документация
-├── docs
+compiler-project/
+├── docs # Документация
 │   ├── assembler.md
 │   ├── grammar.md
 │   ├── ir.md
