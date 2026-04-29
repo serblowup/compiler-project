@@ -11,6 +11,7 @@
 #include "ir/ir_generator.hpp"
 #include "ir/ir_printer.hpp"
 #include "ir/ir_optimizer.hpp"
+#include "codegen/x86_generator.hpp"
 #include "utils/cli.hpp"
 #include "utils/file_io.hpp"
 
@@ -398,6 +399,110 @@ int run_ir_generator(const std::string& input_file, const std::string& output_fi
     }
 }
 
+int run_codegen(const std::string& input_file, const std::string& output_file,
+                const std::string& target, bool verbose) {
+    (void)target;
+    try {
+        if (!FileIO::exists(input_file)) {
+            std::cerr << "[Codegen] Ошибка: Входной файл '" << input_file << "' не найден\n";
+            return 1;
+        }
+
+        std::string source = FileIO::read(input_file);
+
+        if (verbose) {
+            std::cout << "[Codegen] Чтение файла: " << input_file << "\n";
+        }
+
+        Preprocessor preprocessor(source);
+        std::string processed_source = preprocessor.process();
+
+        if (preprocessor.has_errors()) {
+            std::cerr << preprocessor.get_errors();
+            return 1;
+        }
+
+        if (verbose) {
+            std::cout << "[Codegen] Препроцессор завершен\n";
+        }
+
+        Lexer lexer(processed_source);
+        std::vector<Token> tokens;
+
+        while (true) {
+            Token token = lexer.lexer_next_token();
+            tokens.push_back(token);
+
+            if (token.type == TokenType::TOKEN_END_OF_FILE) {
+                break;
+            }
+
+            if (token.type == TokenType::TOKEN_ERROR) {
+                std::cerr << "[Lexer] Ошибка: " << token.lexeme << "\n";
+                return 1;
+            }
+        }
+
+        if (verbose) {
+            std::cout << "[Codegen] Лексер завершен. Получено " << tokens.size() - 1 << " токенов\n";
+        }
+
+        Parser parser(tokens, input_file, processed_source);
+        parser.setMaxErrorCount(100);
+        std::unique_ptr<ProgramNode> ast = parser.parse();
+
+        if (parser.hasErrors()) {
+            return 1;
+        }
+
+        if (verbose) {
+            std::cout << "[Codegen] Парсер завершен\n";
+        }
+
+        semantic::SemanticAnalyzer analyzer(input_file, processed_source);
+        analyzer.analyze(ast.get());
+
+        if (analyzer.hasErrors()) {
+            std::cerr << analyzer.getAllErrors();
+            return 1;
+        }
+
+        if (verbose) {
+            std::cout << "[Codegen] Семантический анализ завершен\n";
+        }
+
+        ir::IRGenerator ir_gen(analyzer.getSymbolTable());
+        ir::IRProgram* ir_program = ir_gen.generate(ast.get());
+
+        if (verbose) {
+            std::cout << "[Codegen] IR сгенерирован\n";
+        }
+
+        codegen::X86Generator x86_gen;
+        std::string assembly = x86_gen.generate(ir_program);
+
+        if (verbose) {
+            std::cout << "[Codegen] x86-64 ассемблер сгенерирован\n";
+        }
+
+        if (output_file.empty() || output_file == "/dev/stdout") {
+            std::cout << assembly;
+        } else {
+            FileIO::write(assembly, output_file);
+            if (verbose) {
+                std::cout << "[Codegen] Результат сохранен в: " << output_file << "\n";
+            }
+        }
+
+        delete ir_program;
+        return 0;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[Codegen] Ошибка: " << e.what() << "\n";
+        return 1;
+    }
+}
+
 int main(int argc, char* argv[]) {
     CommandLineOptions options = CLI::parse(argc, argv);
 
@@ -450,6 +555,14 @@ int main(int argc, char* argv[]) {
         return run_ir_generator(options.input_file, options.output_file,
                                 options.ir_format, options.ir_optimize, options.ir_stats,
                                 options.verbose);
+    }
+    else if (options.command == "compile") {
+        if (options.input_file.empty()) {
+            CLI::print_usage(argv[0]);
+            return 1;
+        }
+        return run_codegen(options.input_file, options.output_file,
+                          options.target, options.verbose);
     }
     else {
         std::cerr << "Неизвестная команда: " << options.command << "\n";

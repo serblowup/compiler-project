@@ -1,0 +1,12 @@
+fn max(int a, int b) -> int {
+    if (a > b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+fn main() -> int {
+    int result = max(42, 24);
+    return result;
+}

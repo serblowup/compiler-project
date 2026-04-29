@@ -3,6 +3,7 @@
 
 function factorial: int (n: int)
   entry:
+      PARAM 0, n_1
       result_1 = 1
       i_1 = 1
       JUMP L1

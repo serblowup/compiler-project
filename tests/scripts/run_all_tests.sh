@@ -37,6 +37,54 @@ run_test_suite() {
     fi
 }
 
+run_codegen_tests() {
+    local category="CODEGEN-VALID"
+    local test_dir="tests/codegen/valid"
+    local expected_dir="tests/codegen/valid/expected"
+    
+    if [ -d "$test_dir" ]; then
+        for subdir in "$test_dir"/*/; do
+            if [ -d "$subdir" ] && [ "$subdir" != "$expected_dir/" ]; then
+                ./tests/scripts/test_codegen.sh "$subdir" "$expected_dir" "$category"
+                local result=$?
+                
+                local count=$(ls -1 "$subdir"/*.src 2>/dev/null | wc -l)
+                TOTAL_TESTS=$((TOTAL_TESTS + count))
+                
+                if [ $result -eq 0 ]; then
+                    TOTAL_PASSED=$((TOTAL_PASSED + count))
+                else
+                    TOTAL_FAILED=$((TOTAL_FAILED + count))
+                fi
+                echo ""
+            fi
+        done
+    fi
+    
+    category="CODEGEN-INVALID"
+    test_dir="tests/codegen/invalid"
+    expected_dir="tests/codegen/invalid/expected"
+    
+    if [ -d "$test_dir" ]; then
+        for subdir in "$test_dir"/*/; do
+            if [ -d "$subdir" ] && [ "$subdir" != "$expected_dir/" ]; then
+                ./tests/scripts/test_codegen.sh "$subdir" "$expected_dir" "$category"
+                local result=$?
+                
+                local count=$(ls -1 "$subdir"/*.src 2>/dev/null | wc -l)
+                TOTAL_TESTS=$((TOTAL_TESTS + count))
+                
+                if [ $result -eq 0 ]; then
+                    TOTAL_PASSED=$((TOTAL_PASSED + count))
+                else
+                    TOTAL_FAILED=$((TOTAL_FAILED + count))
+                fi
+                echo ""
+            fi
+        done
+    fi
+}
+
 run_integration_tests() {
     local script=$1
     $script
@@ -76,10 +124,14 @@ echo "Тесты семантического анализа"
 run_test_suite "./tests/scripts/test_semantic.sh" "tests/semantic/valid" "tests/semantic/valid/expected" "SEMANTIC-VALID"
 run_test_suite "./tests/scripts/test_semantic.sh" "tests/semantic/invalid" "tests/semantic/invalid/expected" "SEMANTIC-INVALID"
 
-# Тесты IR (генерация и оптимизации в одном скрипте)
+# Тесты IR
 echo "Тесты IR"
 run_test_suite "./tests/scripts/test_ir.sh" "tests/ir/generation" "tests/ir/generation/expected" "IR-GENERATION"
 run_test_suite "./tests/scripts/test_ir.sh" "tests/ir/optimization" "tests/ir/optimization/expected" "IR-OPTIMIZATION"
+
+# Тесты кодогенерации
+echo "Тесты кодогенерации"
+run_codegen_tests
 
 # Интеграционные тесты
 echo "Интеграционные тесты"

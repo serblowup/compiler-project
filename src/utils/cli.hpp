@@ -24,6 +24,8 @@ struct CommandLineOptions {
     bool ir_stats;
     std::string ir_format;
     
+    std::string target;
+    
     CommandLineOptions() 
         : command(""), 
           input_file(""), 
@@ -39,7 +41,8 @@ struct CommandLineOptions {
           symbol_format("text"),
           ir_optimize(false),
           ir_stats(false),
-          ir_format("text") {}
+          ir_format("text"),
+          target("x86_64") {}
 };
 
 class CLI {

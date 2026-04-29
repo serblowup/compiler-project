@@ -17,7 +17,8 @@ SOURCES = $(wildcard $(SRCDIR)/*.cpp) \
           $(wildcard $(SRCDIR)/preprocessor/*.cpp) \
           $(wildcard $(SRCDIR)/semantic/*.cpp) \
           $(wildcard $(SRCDIR)/utils/*.cpp) \
-          $(wildcard $(SRCDIR)/ir/*.cpp)
+          $(wildcard $(SRCDIR)/ir/*.cpp) \
+          $(wildcard $(SRCDIR)/codegen/*.cpp)
 
 ifeq ($(wildcard $(SRCDIR)/semantic/*.cpp),)
     SOURCES += $(SRCDIR)/semantic/semantic_analyzer.cpp
@@ -28,7 +29,7 @@ OBJECTS_COV = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR_COV)/%.o,$(SOURCES))
 
 .PHONY: all clean build test scripts coverage coverage-simple \
         test-lexer test-preproc test-parser test-parser-valid test-parser-invalid test-roundtrip test-integration \
-        test-semantic test-ir lexer preprocess parse check
+        test-semantic test-ir test-codegen lexer preprocess parse check ir compile
 
 all: $(TARGET)
 
@@ -95,6 +96,23 @@ test-semantic: scripts $(TARGET)
 # Запуск тестов IR
 test-ir: scripts $(TARGET)
 	@./tests/scripts/test_ir.sh
+
+# Запуск тестов кодогенерации
+test-codegen: scripts $(TARGET)
+	@if [ -d "tests/codegen/valid" ]; then \
+		for dir in tests/codegen/valid/*/; do \
+			if [ -d "$$dir" ] && [ "$$dir" != "tests/codegen/valid/expected/" ]; then \
+				./tests/scripts/test_codegen.sh "$$dir" "tests/codegen/valid/expected" "CODEGEN-VALID"; \
+			fi \
+		done \
+	fi
+	@if [ -d "tests/codegen/invalid" ]; then \
+		for dir in tests/codegen/invalid/*/; do \
+			if [ -d "$$dir" ] && [ "$$dir" != "tests/codegen/invalid/expected/" ]; then \
+				./tests/scripts/test_codegen.sh "$$dir" "tests/codegen/invalid/expected" "CODEGEN-INVALID"; \
+			fi \
+		done \
+	fi
 
 # Запуск тестов с coverage
 coverage: scripts build-cov
@@ -197,7 +215,7 @@ coverage: scripts build-cov
 	@for test_file in examples/*.src; do \
 		if [ -f "$$test_file" ]; then \
 			echo "Запуск $$test_file"; \
-			./$(TARGET_COV) ir --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).out" > /dev/null 2>&1 || true; \
+			./$(TARGET_COV) compile --input "$$test_file" --output "$(COVERAGE_DIR)/data/$$(basename $$test_file .src).asm" > /dev/null 2>&1 || true; \
 		fi \
 	done
 
@@ -315,7 +333,7 @@ coverage-simple:
 
 	@for test_file in examples/*.src; do \
 		if [ -f "$$test_file" ]; then \
-			./$(TARGET_COV) ir --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
+			./$(TARGET_COV) compile --input "$$test_file" --output /dev/null > /dev/null 2>&1 || true; \
 		fi \
 	done
 
@@ -404,6 +422,23 @@ ir: $(TARGET)
 	fi
 	@if [ -n "$(STATS)" ] && [ "$(STATS)" = "1" ]; then \
 		CMD="$$CMD --stats"; \
+	fi
+	@if [ -n "$(VERBOSE)" ] && [ "$(VERBOSE)" = "1" ]; then \
+		CMD="$$CMD --verbose"; \
+	fi
+	@echo "Выполнение: $$CMD"
+	@$$CMD
+
+# Запуск кодогенератора на отдельном файле
+compile: $(TARGET)
+	@if [ -z "$(INPUT)" ] || [ -z "$(OUTPUT)" ]; then \
+		echo "Использование: make compile INPUT=<файл> OUTPUT=<файл> [TARGET=x86_64] [VERBOSE=1]"; \
+		echo "Пример: make compile INPUT=examples/add.src OUTPUT=add.asm"; \
+		exit 1; \
+	fi
+	@CMD="./$(TARGET) compile --input $(INPUT) --output $(OUTPUT)"
+	@if [ -n "$(TARGET_ARCH)" ]; then \
+		CMD="$$CMD --target $(TARGET_ARCH)"; \
 	fi
 	@if [ -n "$(VERBOSE)" ] && [ "$(VERBOSE)" = "1" ]; then \
 		CMD="$$CMD --verbose"; \

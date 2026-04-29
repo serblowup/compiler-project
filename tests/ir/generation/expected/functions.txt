@@ -3,11 +3,15 @@
 
 function add: int (a: int, b: int)
   entry:
+      PARAM 0, a_1
+      PARAM 1, b_1
       t1 = ADD a_1, b_1
       RETURN t1
 
 function mul: int (a: int, b: int)
   entry:
+      PARAM 0, a_1
+      PARAM 1, b_1
       t2 = MUL a_1, b_1
       RETURN t2
 

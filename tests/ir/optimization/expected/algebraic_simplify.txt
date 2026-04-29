@@ -3,6 +3,7 @@
 
 function test: int (x: int)
   entry:
+      PARAM 0, x_1
       t5 = 0
       t6 = 0
       t8 = 0

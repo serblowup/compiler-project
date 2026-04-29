@@ -53,6 +53,8 @@ CommandLineOptions CLI::parse(int argc, char* argv[]) {
             if (options.ir_format != "text" && options.ir_format != "dot" && options.ir_format != "json") {
                 options.ir_format = "text";
             }
+        } else if (arg == "--target" && i + 1 < argc) {
+            options.target = argv[++i];
         }
     }
     
@@ -67,6 +69,7 @@ void CLI::print_usage(const char* program_name) {
     std::cerr << "  parse --input <файл> --output <файл> [опции] - запустить парсер\n";
     std::cerr << "  check --input <файл> --output <файл> [опции] - запустить семантический анализ\n";
     std::cerr << "  ir --input <файл> --output <файл> [опции]    - генерация промежуточного представления (IR)\n";
+    std::cerr << "  compile --input <файл> --output <файл> [опции] - генерация x86-64 ассемблера\n";
     std::cerr << "  help                                          - показать справку\n";
     std::cerr << "\nОпции для parse:\n";
     std::cerr << "  --format text|dot|json        - формат вывода AST (по умолчанию: text)\n";
@@ -84,6 +87,9 @@ void CLI::print_usage(const char* program_name) {
     std::cerr << "  --optimize                     - включить peephole оптимизации\n";
     std::cerr << "  --stats                        - показать статистику IR\n";
     std::cerr << "  --verbose                      - подробный вывод\n";
+    std::cerr << "\nОпции для compile:\n";
+    std::cerr << "  --target <архитектура>         - целевая архитектура (по умолчанию: x86_64)\n";
+    std::cerr << "  --verbose                      - подробный вывод\n";
     std::cerr << "\nОбщие опции:\n";
     std::cerr << "  --input <файл>     - входной файл\n";
     std::cerr << "  --output <файл>    - выходной файл\n";
@@ -99,8 +105,9 @@ void CLI::print_usage(const char* program_name) {
     std::cerr << "  " << program_name << " ir --input examples/factorial.src --output factorial.dot --ir-format dot\n";
     std::cerr << "  " << program_name << " ir --input examples/factorial.src --output factorial.json --ir-format json --stats\n";
     std::cerr << "  " << program_name << " ir --input examples/factorial.src --output factorial_opt.ir --optimize\n";
+    std::cerr << "  " << program_name << " compile --input examples/add.src --output add.asm\n";
 }
 
 void CLI::print_version() {
-    std::cout << "MiniCompiler version 4.0.0 (Sprint 4)\n";
+    std::cout << "MiniCompiler version 5.0.0 (Sprint 5)\n";
 }

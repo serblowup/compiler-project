@@ -1,0 +1,13 @@
+fn double(int x) -> int {
+    return x * 2;
+}
+
+fn add(int a, int b) -> int {
+    return a + b;
+}
+
+fn main() -> int {
+    int x = double(5);
+    int y = add(x, 10);
+    return y;
+}
