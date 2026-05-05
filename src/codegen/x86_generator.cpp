@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cctype>
+#include <set>
 
 namespace codegen {
 
@@ -9,6 +10,7 @@ X86Generator::X86Generator()
     : ir_program(nullptr)
     , current_function(nullptr)
     , current_frame(nullptr)
+    , next_spill_slot(0)
     , label_counter(0)
     , string_counter(0)
     , current_block_ended(false)
@@ -55,17 +57,18 @@ std::string X86Generator::getOperand(const ir::Operand& op) {
     switch (op.kind) {
         case ir::OperandKind::TEMP:
         case ir::OperandKind::VARIABLE: {
-            if (current_function) {
-                std::string base = extractBaseName(op.name);
-                for (const auto& param : current_function->getParameters()) {
-                    if (param.name == base || param.name == op.name) {
-                        if (current_frame && current_frame->hasVar(param.name)) {
-                            int offset = current_frame->getVarOffset(param.name);
-                            std::string mem = "dword [rbp" + std::to_string(offset) + "]";
-                            var_mapping[op.name] = mem;
-                            return mem;
-                        }
-                    }
+            auto it = var_mapping.find(op.name);
+            if (it != var_mapping.end()) {
+                return it->second;
+            }
+            
+            std::string base = extractBaseName(op.name);
+            if (base != op.name) {
+                it = var_mapping.find(base);
+                if (it != var_mapping.end()) {
+                    std::string loc = it->second;
+                    var_mapping[op.name] = loc;
+                    return loc;
                 }
             }
             
@@ -76,16 +79,27 @@ std::string X86Generator::getOperand(const ir::Operand& op) {
                     return reg;
                 }
                 
+                if (base != op.name) {
+                    reg = reg_alloc.getReg(base);
+                    if (!reg.empty()) {
+                        var_mapping[op.name] = reg;
+                        return reg;
+                    }
+                }
+                
                 std::string mem = reg_alloc.getMem(op.name);
                 if (!mem.empty()) {
                     var_mapping[op.name] = mem;
                     return mem;
                 }
-            }
-            
-            auto it = var_mapping.find(op.name);
-            if (it != var_mapping.end()) {
-                return it->second;
+                
+                if (base != op.name) {
+                    mem = reg_alloc.getMem(base);
+                    if (!mem.empty()) {
+                        var_mapping[op.name] = mem;
+                        return mem;
+                    }
+                }
             }
             
             return fallbackGetOperand(op);
@@ -119,45 +133,56 @@ std::string X86Generator::getOperand(const ir::Operand& op) {
 std::string X86Generator::fallbackGetOperand(const ir::Operand& op) {
     std::string base = extractBaseName(op.name);
     
-    auto it = var_mapping.find(base);
-    if (it != var_mapping.end()) {
-        var_mapping[op.name] = it->second;
-        return it->second;
-    }
-    
     if (current_frame && current_frame->hasVar(base)) {
         int offset = current_frame->getVarOffset(base);
         std::string mem = "dword [rbp" + std::to_string(offset) + "]";
         var_mapping[op.name] = mem;
-        return mem;
-    }
-    
-    if (op.name.length() >= 2 && op.name[0] == 't' && 
-        std::all_of(op.name.begin() + 1, op.name.end(), ::isdigit)) {
-        int hash = 0;
-        for (char c : op.name) hash = hash * 31 + c;
-        int offset = -8 - (std::abs(hash) % 40) * 4;
-        std::string mem = "dword [rbp" + std::to_string(offset) + "]";
-        var_mapping[op.name] = mem;
+        var_mapping[base] = mem;
         return mem;
     }
     
     if (current_function) {
-        int param_idx = 0;
         for (const auto& param : current_function->getParameters()) {
             if (param.name == base || param.name == op.name) {
                 if (current_frame && current_frame->hasVar(param.name)) {
                     int offset = current_frame->getVarOffset(param.name);
                     std::string mem = "dword [rbp" + std::to_string(offset) + "]";
                     var_mapping[op.name] = mem;
+                    var_mapping[base] = mem;
                     return mem;
                 }
             }
-            param_idx++;
         }
     }
     
-    return op.name;
+    int slot_offset = getNextSpillOffset(op.name);
+    std::string mem = "dword [rbp" + std::to_string(slot_offset) + "]";
+    var_mapping[op.name] = mem;
+    var_mapping[base] = mem;
+    
+    return mem;
+}
+
+int X86Generator::getNextSpillOffset(const std::string& var_name) {
+    auto it = spill_slots.find(var_name);
+    if (it != spill_slots.end()) {
+        return it->second;
+    }
+    
+    std::string base = extractBaseName(var_name);
+    it = spill_slots.find(base);
+    if (it != spill_slots.end()) {
+        spill_slots[var_name] = it->second;
+        return it->second;
+    }
+    
+    int offset = spill_base_offset - (next_spill_slot * 8);
+    next_spill_slot++;
+    
+    spill_slots[var_name] = offset;
+    spill_slots[base] = offset;
+    
+    return offset;
 }
 
 std::string X86Generator::getDestOperand(const ir::Operand& dest, const ir::Operand& src) {
@@ -168,13 +193,18 @@ std::string X86Generator::getDestOperand(const ir::Operand& dest, const ir::Oper
 void X86Generator::loadToReg(const std::string& reg, const ir::Operand& src) {
     std::string src_op = getOperand(src);
     
+    if (src_op == reg) {
+        return;
+    }
+    
     if (src.kind == ir::OperandKind::CONST_INT ||
         src.kind == ir::OperandKind::CONST_BOOL ||
         src.kind == ir::OperandKind::CONST_FLOAT) {
         emit("mov " + reg + ", " + src_op);
-    } else if (src_op[0] == '[' || src_op.find("rbp") != std::string::npos) {
+    } else if (src_op.find("[rbp") != std::string::npos || 
+               src_op[0] == '[') {
         emit("mov " + reg + ", " + src_op);
-    } else if (reg != src_op) {
+    } else {
         emit("mov " + reg + ", " + src_op);
     }
 }
@@ -182,9 +212,14 @@ void X86Generator::loadToReg(const std::string& reg, const ir::Operand& src) {
 void X86Generator::storeFromReg(const std::string& reg, const ir::Operand& dest) {
     std::string dest_op = getOperand(dest);
     
-    if (dest_op[0] == '[' || dest_op.find("rbp") != std::string::npos) {
+    if (dest_op == reg) {
+        return;
+    }
+    
+    if (dest_op.find("[rbp") != std::string::npos || 
+        dest_op[0] == '[') {
         emit("mov " + dest_op + ", " + reg);
-    } else if (reg != dest_op) {
+    } else {
         emit("mov " + dest_op + ", " + reg);
     }
 }
@@ -216,7 +251,23 @@ void X86Generator::generatePrologue(const ir::IRFunction* func) {
             int offset = current_frame->getVarOffset(param.name);
             if (arg_index < 6) {
                 std::string reg = ABI::getArgRegister(arg_index, false);
-                emit("mov [rbp" + std::to_string(offset) + "], " + ABI::getRegName(reg, 4));
+                std::string mem = "dword [rbp" + std::to_string(offset) + "]";
+                
+                emit("mov " + mem + ", " + ABI::getRegName(reg, 4));
+                
+                var_mapping[param.name] = mem;
+                
+                for (const auto& block : func->getBlocks()) {
+                    for (const auto& instr : block->getInstructions()) {
+                        if (instr->kind == ir::InstrKind::PARAM) {
+                            std::string ssa_name = instr->src2.name;
+                            std::string base = extractBaseName(ssa_name);
+                            if (base == param.name) {
+                                var_mapping[ssa_name] = mem;
+                            }
+                        }
+                    }
+                }
             }
         }
         arg_index++;
@@ -308,21 +359,35 @@ void X86Generator::generateInstruction(const ir::Instruction* instr) {
             break;
             
         default:
-            emitComment("Unknown instruction: " + std::string(ir::instrKindToString(instr->kind)));
+            emitComment("Unknown instruction: " + 
+                       std::string(ir::instrKindToString(instr->kind)));
             break;
     }
 }
 
 void X86Generator::generateArithmetic(const ir::Instruction* instr) {
-    std::string dest_op = getOperand(instr->dest);
     std::string src1_op = getOperand(instr->src1);
     std::string src2_op = getOperand(instr->src2);
     
-    bool dest_is_reg = !dest_op.empty() && dest_op[0] != '[' && 
-                       dest_op.find("rbp") == std::string::npos;
+    if (instr->kind == ir::InstrKind::DIV || instr->kind == ir::InstrKind::MOD) {
+        loadToReg("eax", instr->src1);
+        emit("cdq");
+        emit("idiv " + src2_op);
+        
+        if (instr->kind == ir::InstrKind::DIV) {
+            storeFromReg("eax", instr->dest);
+        } else {
+            storeFromReg("edx", instr->dest);
+        }
+        return;
+    }
+    
+    std::string dest_op = getOperand(instr->dest);
+    bool dest_is_mem = (dest_op.find("[rbp") != std::string::npos || 
+                        dest_op[0] == '[');
     
     std::string work_reg;
-    if (dest_is_reg && instr->kind != ir::InstrKind::DIV && instr->kind != ir::InstrKind::MOD) {
+    if (!dest_is_mem && instr->kind != ir::InstrKind::NEG) {
         work_reg = dest_op;
         loadToReg(work_reg, instr->src1);
     } else {
@@ -331,31 +396,23 @@ void X86Generator::generateArithmetic(const ir::Instruction* instr) {
     }
     
     switch (instr->kind) {
-        case ir::InstrKind::ADD: emit("add " + work_reg + ", " + src2_op); break;
-        case ir::InstrKind::SUB: emit("sub " + work_reg + ", " + src2_op); break;
-        case ir::InstrKind::MUL: emit("imul " + work_reg + ", " + src2_op); break;
-        case ir::InstrKind::DIV:
-            loadToReg("eax", instr->src1);
-            emit("cdq");
-            emit("idiv " + src2_op);
+        case ir::InstrKind::ADD: 
+            emit("add " + work_reg + ", " + src2_op); 
             break;
-        case ir::InstrKind::MOD:
-            loadToReg("eax", instr->src1);
-            emit("cdq");
-            emit("idiv " + src2_op);
+        case ir::InstrKind::SUB: 
+            emit("sub " + work_reg + ", " + src2_op); 
             break;
-        case ir::InstrKind::NEG:
-            emit("neg " + work_reg);
+        case ir::InstrKind::MUL: 
+            emit("imul " + work_reg + ", " + src2_op); 
             break;
-        default:
+        case ir::InstrKind::NEG: 
+            emit("neg " + work_reg); 
+            break;
+        default: 
             break;
     }
     
-    if (instr->kind == ir::InstrKind::DIV) {
-        storeFromReg("eax", instr->dest);
-    } else if (instr->kind == ir::InstrKind::MOD) {
-        storeFromReg("edx", instr->dest);
-    } else if (!dest_is_reg || work_reg != dest_op) {
+    if (dest_is_mem || work_reg != dest_op) {
         storeFromReg(work_reg, instr->dest);
     }
 }
@@ -380,20 +437,27 @@ void X86Generator::generateComparison(const ir::Instruction* instr) {
 
 void X86Generator::generateLogic(const ir::Instruction* instr) {
     std::string dest_op = getOperand(instr->dest);
-    bool dest_is_reg = !dest_op.empty() && dest_op[0] != '[' && 
-                       dest_op.find("rbp") == std::string::npos;
+    bool dest_is_mem = (dest_op.find("[rbp") != std::string::npos || 
+                        dest_op[0] == '[');
     
-    std::string work_reg = dest_is_reg ? dest_op : "eax";
+    std::string work_reg = dest_is_mem ? "eax" : dest_op;
     loadToReg(work_reg, instr->src1);
     
     switch (instr->kind) {
-        case ir::InstrKind::AND: emit("and " + work_reg + ", " + getOperand(instr->src2)); break;
-        case ir::InstrKind::OR:  emit("or "  + work_reg + ", " + getOperand(instr->src2)); break;
-        case ir::InstrKind::NOT: emit("not " + work_reg); break;
-        default: break;
+        case ir::InstrKind::AND: 
+            emit("and " + work_reg + ", " + getOperand(instr->src2)); 
+            break;
+        case ir::InstrKind::OR:  
+            emit("or "  + work_reg + ", " + getOperand(instr->src2)); 
+            break;
+        case ir::InstrKind::NOT: 
+            emit("not " + work_reg); 
+            break;
+        default: 
+            break;
     }
     
-    if (!dest_is_reg) {
+    if (dest_is_mem) {
         storeFromReg(work_reg, instr->dest);
     }
 }
@@ -421,24 +485,26 @@ void X86Generator::generateControlFlow(const ir::Instruction* instr) {
             emit("jmp " + instr->target_label);
             current_block_ended = true;
             break;
+            
         case ir::InstrKind::JUMP_IF:
             loadToReg("eax", instr->src1);
             emit("test eax, eax");
             emit("jnz " + instr->target_label);
-            current_block_ended = true;
             break;
+            
         case ir::InstrKind::JUMP_IF_NOT:
             loadToReg("eax", instr->src1);
             emit("test eax, eax");
             emit("jz " + instr->target_label);
-            current_block_ended = true;
             break;
+            
         case ir::InstrKind::LABEL:
             if (instr->dest.name != "entry") {
                 emitLabel(instr->dest.name);
             }
             current_block_ended = false;
             break;
+            
         default:
             break;
     }
@@ -487,33 +553,27 @@ void X86Generator::generatePhi(const ir::Instruction* instr) {
         for (size_t i = 0; i < instr->args.size(); i += 2) {
             if (i + 1 < instr->args.size()) {
                 const std::string& src_name = instr->args[i].name;
+                std::string src_base = extractBaseName(src_name);
                 
                 auto it = var_mapping.find(src_name);
                 if (it != var_mapping.end()) {
                     var_mapping[phi_dest] = it->second;
+                    var_mapping[phi_base] = it->second;
                     return;
                 }
                 
-                std::string reg = reg_alloc.getReg(src_name);
-                if (!reg.empty()) {
-                    var_mapping[phi_dest] = reg;
-                    return;
-                }
-                
-                std::string mem = reg_alloc.getMem(src_name);
-                if (!mem.empty()) {
-                    var_mapping[phi_dest] = mem;
-                    return;
-                }
-            }
-        }
-        
-        for (size_t i = 0; i < instr->args.size(); i += 2) {
-            if (i + 1 < instr->args.size()) {
-                std::string src_base = extractBaseName(instr->args[i].name);
-                auto it = var_mapping.find(src_base);
+                it = var_mapping.find(src_base);
                 if (it != var_mapping.end()) {
                     var_mapping[phi_dest] = it->second;
+                    var_mapping[phi_base] = it->second;
+                    return;
+                }
+                
+                if (current_frame && current_frame->hasVar(src_base)) {
+                    int offset = current_frame->getVarOffset(src_base);
+                    std::string mem = "dword [rbp" + std::to_string(offset) + "]";
+                    var_mapping[phi_dest] = mem;
+                    var_mapping[phi_base] = mem;
                     return;
                 }
             }
@@ -527,20 +587,16 @@ void X86Generator::generatePhi(const ir::Instruction* instr) {
 }
 
 void X86Generator::generateMove(const ir::Instruction* instr) {
+    std::string dest_op = getOperand(instr->dest);
+    
     if (instr->src1.kind == ir::OperandKind::CONST_INT ||
         instr->src1.kind == ir::OperandKind::CONST_BOOL) {
-        std::string dest_op = getOperand(instr->dest);
         emit("mov " + dest_op + ", " + getOperand(instr->src1));
-    } else {
-        loadToReg("eax", instr->src1);
-        storeFromReg("eax", instr->dest);
+        return;
     }
     
-    if (instr->src1.kind == ir::OperandKind::TEMP || 
-        instr->src1.kind == ir::OperandKind::VARIABLE) {
-        std::string src_op = getOperand(instr->src1);
-        var_mapping[instr->dest.name] = src_op;
-    }
+    loadToReg("eax", instr->src1);
+    storeFromReg("eax", instr->dest);
 }
 
 std::string X86Generator::generate(ir::IRProgram* program) {
@@ -554,7 +610,7 @@ std::string X86Generator::generate(ir::IRProgram* program) {
     rodata_section.str("");
     rodata_section.clear();
     
-    out << "; x86-64 Assembly generated by MiniCompiler\n";
+    out << "; x86-64 Assembly generated by compiler-project\n";
     out << "; System V AMD64 ABI compliant\n";
     
     if (use_register_allocation) {
@@ -593,6 +649,8 @@ void X86Generator::generateTextSection() {
 void X86Generator::generateFunction(const ir::IRFunction* func) {
     current_function = func;
     var_mapping.clear();
+    spill_slots.clear();
+    next_spill_slot = 0;
     current_block_ended = false;
     
     StackFrame frame = StackFrameAnalyzer::analyze(func);
@@ -641,11 +699,13 @@ void X86Generator::generateBssSection() {
 void X86Generator::generateRodataSection() {
 }
 
-void X86Generator::generateGlobalVariable(const std::string& name, const ir::Operand& value) {
+void X86Generator::generateGlobalVariable(const std::string& name, 
+                                          const ir::Operand& value) {
     data_section << name << ": dd " << getOperand(value) << "\n";
 }
 
-void X86Generator::generateStringLiteral(const std::string& label, const std::string& value) {
+void X86Generator::generateStringLiteral(const std::string& label, 
+                                         const std::string& value) {
     rodata_section << label << ": db \"" << value << "\", 0\n";
 }
 

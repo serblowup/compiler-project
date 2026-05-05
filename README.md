@@ -389,6 +389,8 @@ compiler-project/
 │   ├── codegen # Генерация x86-64 ассемблера
 │   │   ├── abi.cpp
 │   │   ├── abi.hpp
+│   │   ├── register_allocator.cpp
+│   │   ├── register_allocator.hpp
 │   │   ├── stack_frame.cpp
 │   │   ├── stack_frame.hpp
 │   │   ├── x86_generator.cpp

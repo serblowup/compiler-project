@@ -9,6 +9,7 @@
 #include "../ir/ir.hpp"
 #include "stack_frame.hpp"
 #include "abi.hpp"
+#include "register_allocator.hpp"
 
 namespace codegen {
 
@@ -24,35 +25,32 @@ private:
     StackFrame* current_frame;
     RegisterAllocator reg_alloc;
     
-    // Отображение IR-переменных на регистры/стек
     std::unordered_map<std::string, std::string> var_mapping;
     
-    // Счетчики
+    std::unordered_map<std::string, int> spill_slots;
+    int next_spill_slot;
+    static constexpr int spill_base_offset = -8;
+    
     int label_counter;
     int string_counter;
     
-    // Флаги
     bool current_block_ended;
     bool use_register_allocation;
     
-    // Вспомогательные методы
     void emit(const std::string& asm_code);
     void emitLabel(const std::string& label);
     void emitComment(const std::string& comment);
     void emitDirective(const std::string& directive);
     
-    // Получение операнда
     std::string getOperand(const ir::Operand& op);
     std::string getDestOperand(const ir::Operand& dest, const ir::Operand& src);
     
-    // Fallback-метод
     std::string fallbackGetOperand(const ir::Operand& op);
+    int getNextSpillOffset(const std::string& var_name);
     
-    // Загрузка/сохранение значений
     void loadToReg(const std::string& reg, const ir::Operand& src);
     void storeFromReg(const std::string& reg, const ir::Operand& dest);
     
-    // Генерация инструкций
     void generatePrologue(const ir::IRFunction* func);
     void generateEpilogue(const ir::IRFunction* func);
     void generateInstruction(const ir::Instruction* instr);
@@ -66,29 +64,23 @@ private:
     void generatePhi(const ir::Instruction* instr);
     void generateMove(const ir::Instruction* instr);
     
-    // Генерация глобальных данных
     void generateGlobalVariable(const std::string& name, const ir::Operand& value);
     void generateStringLiteral(const std::string& label, const std::string& value);
     
-    // Извлечение базового имени (для SSA)
     static std::string extractBaseName(const std::string& ssa_name);
     
 public:
     X86Generator();
     
-    // Главный метод генерации
     std::string generate(ir::IRProgram* program);
     
-    // Генерация секций
     void generateTextSection();
     void generateDataSection();
     void generateBssSection();
     void generateRodataSection();
     
-    // Генерация функции
     void generateFunction(const ir::IRFunction* func);
     
-    // Управление аллокатором
     void setRegisterAllocation(bool enable) { use_register_allocation = enable; }
     bool isRegisterAllocationEnabled() const { return use_register_allocation; }
 };

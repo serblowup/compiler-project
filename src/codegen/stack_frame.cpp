@@ -58,8 +58,21 @@ int StackFrame::getSpillSlotsSize() const {
 }
 
 int StackFrame::getTotalStackSize() const {
-    int total = local_vars_size + saved_regs_size + spill_slots_size;
+    int total = local_vars_size;
+    
+    // Добавляем spill-слоты только если они есть
+    if (spill_slots_size > 0) {
+        total += spill_slots_size;
+    }
+    
+    // Выравниваем до 16 байт
     total = align_value(total, ABI::STACK_ALIGNMENT);
+    
+    // Минимальный размер стека — 16 байт (для пустых функций)
+    if (total < 16) {
+        total = 16;
+    }
+    
     return total;
 }
 
@@ -134,7 +147,7 @@ std::vector<std::string> StackFrameAnalyzer::getUsedCalleeSavedRegs(
     const ir::IRFunction* func) {
     
     std::set<std::string> used_regs;
-    
+
     size_t instruction_count = 0;
     for (const auto& block : func->getBlocks()) {
         instruction_count += block->getInstructions().size();
