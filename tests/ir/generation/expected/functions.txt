@@ -20,6 +20,5 @@ function main: int ()
       t3 = CALL add, 5, 3
       x_1 = t3
       t4 = CALL mul, x_1, 2
-      y_1 = t4
-      RETURN y_1
+      RETURN t4
 

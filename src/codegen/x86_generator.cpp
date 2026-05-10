@@ -1,4 +1,5 @@
 #include "x86_generator.hpp"
+#include "peephole_optimizer.hpp"
 #include <algorithm>
 #include <stdexcept>
 #include <cctype>
@@ -10,11 +11,12 @@ X86Generator::X86Generator()
     : ir_program(nullptr)
     , current_function(nullptr)
     , current_frame(nullptr)
-    , next_spill_slot(0)
     , label_counter(0)
     , string_counter(0)
     , current_block_ended(false)
     , use_register_allocation(true)
+    , use_peephole_optimization(true)
+    , last_call_dest("")
 {
 }
 
@@ -155,34 +157,12 @@ std::string X86Generator::fallbackGetOperand(const ir::Operand& op) {
         }
     }
     
-    int slot_offset = getNextSpillOffset(op.name);
-    std::string mem = "dword [rbp" + std::to_string(slot_offset) + "]";
+    int spill_offset = current_frame->allocateSpillSlot(op.name, 4);
+    std::string mem = "dword [rbp" + std::to_string(spill_offset) + "]";
     var_mapping[op.name] = mem;
     var_mapping[base] = mem;
     
     return mem;
-}
-
-int X86Generator::getNextSpillOffset(const std::string& var_name) {
-    auto it = spill_slots.find(var_name);
-    if (it != spill_slots.end()) {
-        return it->second;
-    }
-    
-    std::string base = extractBaseName(var_name);
-    it = spill_slots.find(base);
-    if (it != spill_slots.end()) {
-        spill_slots[var_name] = it->second;
-        return it->second;
-    }
-    
-    int offset = spill_base_offset - (next_spill_slot * 8);
-    next_spill_slot++;
-    
-    spill_slots[var_name] = offset;
-    spill_slots[base] = offset;
-    
-    return offset;
 }
 
 std::string X86Generator::getDestOperand(const ir::Operand& dest, const ir::Operand& src) {
@@ -299,6 +279,10 @@ void X86Generator::generateEpilogue(const ir::IRFunction* func) {
 void X86Generator::generateInstruction(const ir::Instruction* instr) {
     if (current_block_ended) {
         return;
+    }
+    
+    if (instr->kind != ir::InstrKind::CALL) {
+        last_call_dest = "";
     }
     
     switch (instr->kind) {
@@ -486,17 +470,29 @@ void X86Generator::generateControlFlow(const ir::Instruction* instr) {
             current_block_ended = true;
             break;
             
-        case ir::InstrKind::JUMP_IF:
-            loadToReg("eax", instr->src1);
-            emit("test eax, eax");
+        case ir::InstrKind::JUMP_IF: {
+            std::string src_op = getOperand(instr->src1);
+            if (src_op.find('[') == std::string::npos) {
+                emit("test " + src_op + ", " + src_op);
+            } else {
+                loadToReg("eax", instr->src1);
+                emit("test eax, eax");
+            }
             emit("jnz " + instr->target_label);
             break;
+        }
             
-        case ir::InstrKind::JUMP_IF_NOT:
-            loadToReg("eax", instr->src1);
-            emit("test eax, eax");
+        case ir::InstrKind::JUMP_IF_NOT: {
+            std::string src_op = getOperand(instr->src1);
+            if (src_op.find('[') == std::string::npos) {
+                emit("test " + src_op + ", " + src_op);
+            } else {
+                loadToReg("eax", instr->src1);
+                emit("test eax, eax");
+            }
             emit("jz " + instr->target_label);
             break;
+        }
             
         case ir::InstrKind::LABEL:
             if (instr->dest.name != "entry") {
@@ -531,12 +527,21 @@ void X86Generator::generateCall(const ir::Instruction* instr) {
         emit("add rsp, " + std::to_string((arg_count - 6) * 8));
     }
     
+    last_call_dest = instr->dest.name;
     storeFromReg("eax", instr->dest);
 }
 
 void X86Generator::generateReturn(const ir::Instruction* instr) {
     if (instr->src1.kind != ir::OperandKind::TEMP || !instr->src1.name.empty()) {
-        loadToReg("eax", instr->src1);
+        std::string src_op = getOperand(instr->src1);
+        
+        if (!last_call_dest.empty() && instr->src1.name == last_call_dest) {
+        } else if (src_op == "eax") {
+        } else if (src_op.find('[') != std::string::npos) {
+            loadToReg("eax", instr->src1);
+        } else {
+            emit("mov eax, " + src_op);
+        }
     }
     
     if (current_function) {
@@ -595,6 +600,15 @@ void X86Generator::generateMove(const ir::Instruction* instr) {
         return;
     }
     
+    std::string src_op = getOperand(instr->src1);
+    
+    if (src_op.find('[') == std::string::npos && dest_op.find('[') == std::string::npos) {
+        if (src_op != dest_op) {
+            emit("mov " + dest_op + ", " + src_op);
+        }
+        return;
+    }
+    
     loadToReg("eax", instr->src1);
     storeFromReg("eax", instr->dest);
 }
@@ -616,26 +630,35 @@ std::string X86Generator::generate(ir::IRProgram* program) {
     if (use_register_allocation) {
         out << "; Register allocation: Linear Scan\n";
     }
+    if (use_peephole_optimization) {
+        out << "; Peephole optimization: enabled\n";
+    }
     out << "\n";
     
     generateTextSection();
     
+    std::string result = out.str();
+    if (use_peephole_optimization) {
+        PeepholeOptimizer peephole;
+        result = peephole.optimize(result);
+    }
+    
     if (!data_section.str().empty()) {
-        out << "\nsection .data\n";
-        out << data_section.str();
+        result += "\nsection .data\n";
+        result += data_section.str();
     }
     
     if (!bss_section.str().empty()) {
-        out << "\nsection .bss\n";
-        out << bss_section.str();
+        result += "\nsection .bss\n";
+        result += bss_section.str();
     }
     
     if (!rodata_section.str().empty()) {
-        out << "\nsection .rodata\n";
-        out << rodata_section.str();
+        result += "\nsection .rodata\n";
+        result += rodata_section.str();
     }
     
-    return out.str();
+    return result;
 }
 
 void X86Generator::generateTextSection() {
@@ -649,9 +672,8 @@ void X86Generator::generateTextSection() {
 void X86Generator::generateFunction(const ir::IRFunction* func) {
     current_function = func;
     var_mapping.clear();
-    spill_slots.clear();
-    next_spill_slot = 0;
     current_block_ended = false;
+    last_call_dest = "";
     
     StackFrame frame = StackFrameAnalyzer::analyze(func);
     

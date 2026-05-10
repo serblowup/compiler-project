@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cctype>
+#include <unordered_set>
 
 namespace codegen {
 
@@ -132,6 +133,71 @@ void RegisterAllocator::expireOldIntervals(int current_pos,
     active = std::move(still_active);
 }
 
+void RegisterAllocator::spillFarthestInterval(
+    int current_pos,
+    std::vector<ActiveInterval>& active,
+    LiveRange& current_lr) {
+    
+    (void)current_pos;
+    
+    int farthest_idx = -1;
+    int farthest_end = -1;
+    
+    for (size_t i = 0; i < active.size(); ++i) {
+        if (active[i].end > farthest_end) {
+            farthest_end = active[i].end;
+            farthest_idx = static_cast<int>(i);
+        }
+    }
+    
+    if (farthest_idx == -1) {
+        int slot = -(8 + next_spill_offset);
+        next_spill_offset += 4;
+        next_spill_offset = (next_spill_offset + 3) & ~3;
+        max_spill_offset = std::max(max_spill_offset, next_spill_offset);
+        
+        current_lr.is_spilled = true;
+        current_lr.spill_slot = slot;
+        var_to_mem[current_lr.var_name] = "dword [rbp" + std::to_string(slot) + "]";
+        vars_spilled++;
+        return;
+    }
+    
+    std::string spill_var = active[farthest_idx].var_name;
+    std::string spill_reg = active[farthest_idx].reg;
+    
+    int slot = -(8 + next_spill_offset);
+    next_spill_offset += 4;
+    next_spill_offset = (next_spill_offset + 3) & ~3;
+    max_spill_offset = std::max(max_spill_offset, next_spill_offset);
+    
+    for (auto& lr : live_ranges) {
+        if (lr.var_name == spill_var) {
+            lr.is_spilled = true;
+            lr.spill_slot = slot;
+            break;
+        }
+    }
+    var_to_mem[spill_var] = "dword [rbp" + std::to_string(slot) + "]";
+    var_to_reg.erase(spill_var);
+    vars_spilled++;
+    vars_in_regs--;
+    
+    active.erase(active.begin() + farthest_idx);
+    
+    reg_states[spill_reg].in_use   = true;
+    reg_states[spill_reg].var_name = current_lr.var_name;
+    var_to_reg[current_lr.var_name] = spill_reg;
+    
+    ActiveInterval ai;
+    ai.var_name = current_lr.var_name;
+    ai.end      = current_lr.end;
+    ai.reg      = spill_reg;
+    active.push_back(ai);
+    
+    vars_in_regs++;
+}
+
 void RegisterAllocator::allocateRegisters(const ir::IRFunction* func) {
     if (live_ranges.empty()) {
         collectLiveRanges(func);
@@ -155,8 +221,8 @@ void RegisterAllocator::allocateRegisters(const ir::IRFunction* func) {
         base_groups[base].push_back(&lr);
     }
     
+    std::unordered_set<std::string> pre_spilled_vars;
     for (auto& [base, ranges] : base_groups) {
-        (void)base;
         if (ranges.size() <= 1) continue;
         
         int slot = -(8 + next_spill_offset);
@@ -165,18 +231,22 @@ void RegisterAllocator::allocateRegisters(const ir::IRFunction* func) {
         max_spill_offset = std::max(max_spill_offset, next_spill_offset);
         
         std::string mem_ref = "dword [rbp" + std::to_string(slot) + "]";
+        
         for (auto* lr : ranges) {
             lr->is_spilled = true;
             lr->spill_slot = slot;
             var_to_mem[lr->var_name] = mem_ref;
+            pre_spilled_vars.insert(lr->var_name);
+            vars_spilled++;
         }
-        vars_spilled += static_cast<int>(ranges.size());
     }
     
     std::vector<ActiveInterval> active;
     
     for (auto& lr : live_ranges) {
-        if (lr.is_spilled) continue;
+        if (pre_spilled_vars.count(lr.var_name) > 0) {
+            continue;
+        }
         
         expireOldIntervals(lr.start, active);
         
@@ -201,15 +271,7 @@ void RegisterAllocator::allocateRegisters(const ir::IRFunction* func) {
             
             vars_in_regs++;
         } else {
-            int slot = -(8 + next_spill_offset);
-            next_spill_offset += 4;
-            next_spill_offset = (next_spill_offset + 3) & ~3;
-            max_spill_offset = std::max(max_spill_offset, next_spill_offset);
-            
-            lr.is_spilled = true;
-            lr.spill_slot = slot;
-            var_to_mem[lr.var_name] = "dword [rbp" + std::to_string(slot) + "]";
-            vars_spilled++;
+            spillFarthestInterval(lr.start, active, lr);
         }
     }
     
@@ -218,12 +280,32 @@ void RegisterAllocator::allocateRegisters(const ir::IRFunction* func) {
 
 std::string RegisterAllocator::getReg(const std::string& var_name) const {
     auto it = var_to_reg.find(var_name);
-    return (it != var_to_reg.end()) ? it->second : "";
+    if (it != var_to_reg.end()) {
+        return it->second;
+    }
+    std::string base = extractBaseName(var_name);
+    if (base != var_name) {
+        it = var_to_reg.find(base);
+        if (it != var_to_reg.end()) {
+            return it->second;
+        }
+    }
+    return "";
 }
 
 std::string RegisterAllocator::getMem(const std::string& var_name) const {
     auto it = var_to_mem.find(var_name);
-    return (it != var_to_mem.end()) ? it->second : "";
+    if (it != var_to_mem.end()) {
+        return it->second;
+    }
+    std::string base = extractBaseName(var_name);
+    if (base != var_name) {
+        it = var_to_mem.find(base);
+        if (it != var_to_mem.end()) {
+            return it->second;
+        }
+    }
+    return "";
 }
 
 bool RegisterAllocator::isInRegister(const std::string& var_name) const {
@@ -240,10 +322,20 @@ int RegisterAllocator::getSpillSlotOffset(const std::string& var_name) const {
             return lr.spill_slot;
         }
     }
+    std::string base = extractBaseName(var_name);
+    if (base != var_name) {
+        for (const auto& lr : live_ranges) {
+            std::string lr_base = extractBaseName(lr.var_name);
+            if (lr_base == base && lr.is_spilled) {
+                return lr.spill_slot;
+            }
+        }
+    }
     return 0;
 }
 
 int RegisterAllocator::getTotalSpillSize() const {
+    if (max_spill_offset == 0) return 0;
     return (max_spill_offset + 15) & ~15;
 }
 

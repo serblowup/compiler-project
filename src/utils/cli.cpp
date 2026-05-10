@@ -56,6 +56,12 @@ CommandLineOptions CLI::parse(int argc, char* argv[]) {
         } else if (arg == "--target" && i + 1 < argc) {
             options.target = argv[++i];
         }
+        else if (arg == "--no-lsra") {
+            options.no_lsra = true;
+            options.no_peephole = true;
+        } else if (arg == "--no-peephole") {
+            options.no_peephole = true;
+        }
     }
     
     return options;
@@ -84,11 +90,13 @@ void CLI::print_usage(const char* program_name) {
     std::cerr << "  --max-errors <число>           - максимальное количество ошибок (по умолчанию: 100)\n";
     std::cerr << "\nОпции для ir:\n";
     std::cerr << "  --ir-format text|dot|json      - формат вывода IR (по умолчанию: text)\n";
-    std::cerr << "  --optimize                     - включить peephole оптимизации\n";
+    std::cerr << "  --optimize                     - включить peephole оптимизации IR\n";
     std::cerr << "  --stats                        - показать статистику IR\n";
     std::cerr << "  --verbose                      - подробный вывод\n";
     std::cerr << "\nОпции для compile:\n";
     std::cerr << "  --target <архитектура>         - целевая архитектура (по умолчанию: x86_64)\n";
+    std::cerr << "  --no-lsra                      - отключить LSRA и оконную оптимизацию\n";
+    std::cerr << "  --no-peephole                  - отключить только оконную оптимизацию (LSRA остаётся)\n";
     std::cerr << "  --verbose                      - подробный вывод\n";
     std::cerr << "\nОбщие опции:\n";
     std::cerr << "  --input <файл>     - входной файл\n";
@@ -106,6 +114,8 @@ void CLI::print_usage(const char* program_name) {
     std::cerr << "  " << program_name << " ir --input examples/factorial.src --output factorial.json --ir-format json --stats\n";
     std::cerr << "  " << program_name << " ir --input examples/factorial.src --output factorial_opt.ir --optimize\n";
     std::cerr << "  " << program_name << " compile --input examples/add.src --output add.asm\n";
+    std::cerr << "  " << program_name << " compile --input examples/add.src --output add.asm --no-lsra\n";
+    std::cerr << "  " << program_name << " compile --input examples/add.src --output add.asm --no-peephole\n";
 }
 
 void CLI::print_version() {

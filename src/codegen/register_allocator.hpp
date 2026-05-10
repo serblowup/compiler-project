@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <algorithm>
 
 namespace ir {
@@ -87,6 +88,10 @@ private:
                            std::vector<ActiveInterval>& active);
     void addVarUse(const std::string& var_name, int instr_index);
     static std::string extractBaseName(const std::string& ssa_name);
+    
+    void spillFarthestInterval(int current_pos,
+                               std::vector<ActiveInterval>& active,
+                               LiveRange& current_lr);
 };
 
 }

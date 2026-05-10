@@ -15,6 +15,7 @@ StackFrame::StackFrame(const std::string& name)
     , current_offset(0) {
     local_vars.clear();
     saved_registers.clear();
+    spill_vars.clear();
 }
 
 static int align_value(int value, int alignment) {
@@ -35,8 +36,30 @@ int StackFrame::allocateVar(const std::string& name, int size, int alignment) {
     return offset;
 }
 
+int StackFrame::allocateSpillSlot(const std::string& name, int size) {
+    for (const auto& var : spill_vars) {
+        if (var.name == name) {
+            return var.offset;
+        }
+    }
+    
+    int aligned = align_value(current_offset, 8);
+    current_offset = aligned + size;
+    
+    int offset = -current_offset;
+    spill_vars.push_back(StackVar(name, offset, size, 8));
+    spill_slots_size = current_offset - local_vars_size;
+    
+    return offset;
+}
+
 int StackFrame::getVarOffset(const std::string& name) const {
     for (const auto& var : local_vars) {
+        if (var.name == name) {
+            return var.offset;
+        }
+    }
+    for (const auto& var : spill_vars) {
         if (var.name == name) {
             return var.offset;
         }
@@ -50,7 +73,7 @@ void StackFrame::saveRegister(const std::string& reg) {
 }
 
 void StackFrame::setSpillSlotsSize(int size) {
-    spill_slots_size = size;
+    (void)size;
 }
 
 int StackFrame::getSpillSlotsSize() const {
@@ -58,17 +81,10 @@ int StackFrame::getSpillSlotsSize() const {
 }
 
 int StackFrame::getTotalStackSize() const {
-    int total = local_vars_size;
-    
-    // Добавляем spill-слоты только если они есть
-    if (spill_slots_size > 0) {
-        total += spill_slots_size;
-    }
-    
-    // Выравниваем до 16 байт
+    int total = current_offset;
+
     total = align_value(total, ABI::STACK_ALIGNMENT);
     
-    // Минимальный размер стека — 16 байт (для пустых функций)
     if (total < 16) {
         total = 16;
     }
@@ -98,6 +114,11 @@ bool StackFrame::hasVar(const std::string& name) const {
             return true;
         }
     }
+    for (const auto& var : spill_vars) {
+        if (var.name == name) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -112,6 +133,11 @@ std::string StackFrame::toString() const {
     for (const auto& var : local_vars) {
         oss << "    " << var.name << ": offset " << var.offset 
             << ", size " << var.size << " (alignment " << var.alignment << ")\n";
+    }
+    oss << "  Spill slots:\n";
+    for (const auto& var : spill_vars) {
+        oss << "    " << var.name << ": offset " << var.offset 
+            << ", size " << var.size << "\n";
     }
     oss << "  Saved registers:\n";
     for (const auto& reg : saved_registers) {

@@ -26,6 +26,9 @@ struct CommandLineOptions {
     
     std::string target;
     
+    bool no_lsra;
+    bool no_peephole;
+    
     CommandLineOptions() 
         : command(""), 
           input_file(""), 
@@ -42,7 +45,9 @@ struct CommandLineOptions {
           ir_optimize(false),
           ir_stats(false),
           ir_format("text"),
-          target("x86_64") {}
+          target("x86_64"),
+          no_lsra(false),
+          no_peephole(false) {}
 };
 
 class CLI {

@@ -27,15 +27,14 @@ private:
     
     std::unordered_map<std::string, std::string> var_mapping;
     
-    std::unordered_map<std::string, int> spill_slots;
-    int next_spill_slot;
-    static constexpr int spill_base_offset = -8;
-    
     int label_counter;
     int string_counter;
     
     bool current_block_ended;
     bool use_register_allocation;
+    bool use_peephole_optimization;
+    
+    std::string last_call_dest;
     
     void emit(const std::string& asm_code);
     void emitLabel(const std::string& label);
@@ -46,7 +45,6 @@ private:
     std::string getDestOperand(const ir::Operand& dest, const ir::Operand& src);
     
     std::string fallbackGetOperand(const ir::Operand& op);
-    int getNextSpillOffset(const std::string& var_name);
     
     void loadToReg(const std::string& reg, const ir::Operand& src);
     void storeFromReg(const std::string& reg, const ir::Operand& dest);
@@ -83,6 +81,9 @@ public:
     
     void setRegisterAllocation(bool enable) { use_register_allocation = enable; }
     bool isRegisterAllocationEnabled() const { return use_register_allocation; }
+    
+    void setPeepholeOptimization(bool enable) { use_peephole_optimization = enable; }
+    bool isPeepholeOptimizationEnabled() const { return use_peephole_optimization; }
 };
 
 }

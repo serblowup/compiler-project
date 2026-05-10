@@ -400,7 +400,8 @@ int run_ir_generator(const std::string& input_file, const std::string& output_fi
 }
 
 int run_codegen(const std::string& input_file, const std::string& output_file,
-                const std::string& target, bool verbose) {
+                const std::string& target, bool verbose,
+                bool no_lsra, bool no_peephole) {
     (void)target;
     try {
         if (!FileIO::exists(input_file)) {
@@ -479,6 +480,27 @@ int run_codegen(const std::string& input_file, const std::string& output_file,
         }
 
         codegen::X86Generator x86_gen;
+        
+        if (no_lsra) {
+            x86_gen.setRegisterAllocation(false);
+            x86_gen.setPeepholeOptimization(false);
+            if (verbose) {
+                std::cout << "[Codegen] Оптимизации отключены (--no-lsra)\n";
+            }
+        } else if (no_peephole) {
+            x86_gen.setRegisterAllocation(true);
+            x86_gen.setPeepholeOptimization(false);
+            if (verbose) {
+                std::cout << "[Codegen] Только LSRA (--no-peephole)\n";
+            }
+        } else {
+            x86_gen.setRegisterAllocation(true);
+            x86_gen.setPeepholeOptimization(true);
+            if (verbose) {
+                std::cout << "[Codegen] LSRA + Peephole (по умолчанию)\n";
+            }
+        }
+        
         std::string assembly = x86_gen.generate(ir_program);
 
         if (verbose) {
@@ -562,7 +584,8 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         return run_codegen(options.input_file, options.output_file,
-                          options.target, options.verbose);
+                          options.target, options.verbose,
+                          options.no_lsra, options.no_peephole);
     }
     else {
         std::cerr << "Неизвестная команда: " << options.command << "\n";

@@ -19,7 +19,6 @@ std::string IRGenerator::newLabel() {
     return "L" + std::to_string(++label_counter);
 }
 
-// SSA: получение текущей версии переменной
 std::string IRGenerator::getCurrentVersion(const std::string& var) {
     auto it = version_stacks.find(var);
     if (it == version_stacks.end() || it->second.empty()) {
@@ -28,19 +27,16 @@ std::string IRGenerator::getCurrentVersion(const std::string& var) {
     return it->second.top();
 }
 
-// SSA: создание новой версии переменной
 std::string IRGenerator::newVersion(const std::string& var) {
     int version = ++var_versions[var];
     return var + "_" + std::to_string(version);
 }
 
-// SSA: сохранить новую версию
 void IRGenerator::pushVersion(const std::string& var) {
     std::string version = newVersion(var);
     version_stacks[var].push(version);
 }
 
-// SSA: восстановить предыдущую версию
 void IRGenerator::popVersion(const std::string& var) {
     auto it = version_stacks.find(var);
     if (it != version_stacks.end() && !it->second.empty()) {
@@ -49,7 +45,6 @@ void IRGenerator::popVersion(const std::string& var) {
 }
 
 void IRGenerator::emit(std::unique_ptr<Instruction> instr) {
-    // Если это инструкция LABEL, создаём новый блок
     if (instr->kind == InstrKind::LABEL) {
         std::string block_name = instr->dest.name;
         current_block = current_function->createBlock(block_name);
@@ -76,14 +71,12 @@ void IRGenerator::emit(InstrKind kind, const Operand& dest, const Operand& src1,
     emit(std::move(instr));
 }
 
-// SSA: загрузка переменной
 Operand IRGenerator::loadVariable(const std::string& name, semantic::Type* type) {
     (void)type;
     std::string versioned_name = getCurrentVersion(name);
     return Operand::Temp(versioned_name);
 }
 
-// SSA: сохранение переменной
 void IRGenerator::storeVariable(const std::string& name, const Operand& value) {
     pushVersion(name);
     std::string versioned_name = getCurrentVersion(name);
@@ -118,7 +111,6 @@ Operand IRGenerator::generateExpression(ExpressionNode* expr) {
     return result;
 }
 
-// Генерация выражений
 void IRGenerator::visitLiteralExprNode(LiteralExprNode* node) {
     if (auto val = node->getValue<int>()) {
         expr_stack.push(Operand::ConstInt(*val));
@@ -186,7 +178,6 @@ void IRGenerator::visitUnaryExprNode(UnaryExprNode* node) {
     }
 }
 
-// SSA: присваивание создаёт новую версию переменной
 void IRGenerator::visitAssignmentExprNode(AssignmentExprNode* node) {
     Operand value = generateExpression(node->getValue());
     
@@ -224,14 +215,12 @@ void IRGenerator::visitCallExprNode(CallExprNode* node) {
     expr_stack.push(result);
 }
 
-// Генерация операторов
 void IRGenerator::visitBlockStmtNode(BlockStmtNode* node) {
     for (const auto& stmt : node->getStatements()) {
         stmt->accept(this);
     }
 }
 
-// SSA: if с Phi-функциями на выходе
 void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
     std::string then_label = newLabel();
     std::string else_label = newLabel();
@@ -239,7 +228,6 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
     
     BasicBlock* entry_block = current_block;
     
-    // Запоминаем версии перед условием
     auto before_if_stacks = version_stacks;
     
     Operand cond = generateExpression(node->getCondition());
@@ -256,21 +244,17 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
     BasicBlock* else_block = nullptr;
     BasicBlock* then_block = nullptr;
     
-    // Then branch
     auto label_then = std::make_unique<Instruction>(InstrKind::LABEL);
     label_then->dest = Operand::Label(then_label);
     emit(std::move(label_then));
     then_block = current_block;
     
-    // Сохраняем стеки версий перед then-веткой
     auto then_stacks = version_stacks;
     
-    // Флаг, была ли инструкция RETURN в then-ветке
     bool then_has_return = false;
     
     node->getThenBranch()->accept(this);
     
-    // Проверяем, заканчивается ли then-ветка RETURN
     if (!current_block->getInstructions().empty()) {
         auto& last_instr = current_block->getInstructions().back();
         if (last_instr->kind == InstrKind::RETURN) {
@@ -278,29 +262,24 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
         }
     }
     
-    // Добавляем JUMP к end_label только если then-ветка не заканчивается RETURN
     if (!then_has_return) {
         auto jump_to_end = std::make_unique<Instruction>(InstrKind::JUMP);
         jump_to_end->target_label = end_label;
         emit(std::move(jump_to_end));
     }
     
-    // Else branch
     auto label_else = std::make_unique<Instruction>(InstrKind::LABEL);
     label_else->dest = Operand::Label(else_label);
     emit(std::move(label_else));
     else_block = current_block;
     
-    // Восстанавливаем стеки для else-ветки
     version_stacks = then_stacks;
     
-    // Флаг, была ли инструкция RETURN в else-ветке
     bool else_has_return = false;
     
     if (node->hasElse()) {
         node->getElseBranch()->accept(this);
         
-        // Проверяем, заканчивается ли else-ветка RETURN
         if (!current_block->getInstructions().empty()) {
             auto& last_instr = current_block->getInstructions().back();
             if (last_instr->kind == InstrKind::RETURN) {
@@ -309,7 +288,6 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
         }
     }
     
-    // Добавляем JUMP к end_label только если else-ветка не заканчивается RETURN
     if (!else_has_return) {
         auto jump_to_end2 = std::make_unique<Instruction>(InstrKind::JUMP);
         jump_to_end2->target_label = end_label;
@@ -324,13 +302,11 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
         return;
     }
     
-    // End block
     auto label_end = std::make_unique<Instruction>(InstrKind::LABEL);
     label_end->dest = Operand::Label(end_label);
     emit(std::move(label_end));
     BasicBlock* end_block = current_block;
     
-    // Создаём Phi-функции для переменных, которые изменились
     std::set<std::string> all_vars;
     for (const auto& [var, _] : then_stacks) {
         all_vars.insert(var);
@@ -363,7 +339,6 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
             }
         }
         
-        // Если версии различаются, нужна Phi
         if (then_version != else_version && then_version != "undefined" && else_version != "undefined") {
             pushVersion(var);
             std::string phi_result = getCurrentVersion(var);
@@ -375,7 +350,6 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
             phi_instr->args.push_back(Operand::Temp(else_version));
             phi_instr->args.push_back(Operand::Label(else_label));
             
-            // Вставляем в начало end_block
             end_block->getInstructionsMutable().insert(
                 end_block->getInstructionsMutable().begin(),
                 std::move(phi_instr)
@@ -383,7 +357,6 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
         }
     }
     
-    // Обновляем связи CFG
     if (entry_block) {
         entry_block->addSuccessor(then_block);
         entry_block->addSuccessor(else_block);
@@ -396,7 +369,6 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
     }
 }
 
-// SSA: while с Phi-функциями
 void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
     std::string header_label = newLabel();
     std::string body_label = newLabel();
@@ -404,15 +376,12 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
     
     BasicBlock* entry_block = current_block;
     
-    // Запоминаем версии перед циклом
     auto before_loop_stacks = version_stacks;
     
-    // Прыгаем в заголовок
     auto jump_to_header = std::make_unique<Instruction>(InstrKind::JUMP);
     jump_to_header->target_label = header_label;
     emit(std::move(jump_to_header));
     
-    // Заголовок цикла (блок с Phi-функциями)
     auto label_header = std::make_unique<Instruction>(InstrKind::LABEL);
     label_header->dest = Operand::Label(header_label);
     emit(std::move(label_header));
@@ -432,10 +401,8 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
         }
     }
     
-    // Сохраняем Phi-версии для использования после цикла
     std::unordered_map<std::string, std::string> phi_versions;
     
-    // Создаём Phi-функции в заголовке
     for (const std::string& var : loop_vars) {
         std::string pre_version = var + "_0";
         auto it_pre = before_loop_stacks.find(var);
@@ -447,7 +414,6 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
         std::string phi_version = getCurrentVersion(var);
         phi_versions[var] = phi_version;
         
-        // Создаем Phi-инструкцию
         auto phi_instr = std::make_unique<Instruction>(InstrKind::PHI);
         phi_instr->dest = Operand::Temp(phi_version);
         phi_instr->args.push_back(Operand::Temp(pre_version));
@@ -465,7 +431,6 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
         version_stacks[var].push(phi_ver);
     }
     
-    // Генерируем условие
     Operand cond = generateExpression(node->getCondition());
     
     auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
@@ -477,7 +442,6 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
     jump_to_body->target_label = body_label;
     emit(std::move(jump_to_body));
     
-    // Тело цикла
     auto label_body = std::make_unique<Instruction>(InstrKind::LABEL);
     label_body->dest = Operand::Label(body_label);
     emit(std::move(label_body));
@@ -485,10 +449,8 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
     
     node->getBody()->accept(this);
     
-    // Запоминаем версии после тела
     auto after_body_stacks = version_stacks;
     
-    // Прыжок обратно в заголовок
     auto jump_back = std::make_unique<Instruction>(InstrKind::JUMP);
     jump_back->target_label = header_label;
     emit(std::move(jump_back));
@@ -500,21 +462,18 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
             size_t underscore = phi_dest.rfind('_');
             std::string base_var = (underscore != std::string::npos) ? phi_dest.substr(0, underscore) : phi_dest;
             
-            // Получаем версию из тела
             std::string body_version = base_var + "_0";
             auto it_body = after_body_stacks.find(base_var);
             if (it_body != after_body_stacks.end() && !it_body->second.empty()) {
                 body_version = it_body->second.top();
             }
             
-            // Обновляем второй аргумент Phi
             if (instr->args.size() >= 4) {
                 instr->args[2] = Operand::Temp(body_version);
             }
         }
     }
     
-    // Exit блок
     auto label_exit = std::make_unique<Instruction>(InstrKind::LABEL);
     label_exit->dest = Operand::Label(exit_label);
     emit(std::move(label_exit));
@@ -530,7 +489,6 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
         }
     }
     
-    // Обновляем связи CFG
     if (entry_block) {
         entry_block->addSuccessor(header_block);
     }
@@ -543,11 +501,31 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
     }
 }
 
-// SSA: for с Phi-функциями
 void IRGenerator::visitForStmtNode(ForStmtNode* node) {
-    // Инициализация
     if (node->hasInit()) {
-        node->getInit()->accept(this);
+        bool skip_init = false;
+        if (auto* exprStmt = dynamic_cast<ExprStmtNode*>(node->getInit())) {
+            if (auto* assign = dynamic_cast<AssignmentExprNode*>(exprStmt->getExpression())) {
+                if (auto* id = dynamic_cast<IdentifierExprNode*>(assign->getTarget())) {
+                    bool is_zero = false;
+                    if (auto* lit = dynamic_cast<LiteralExprNode*>(assign->getValue())) {
+                        if (auto intVal = lit->getValue<int>()) {
+                            if (*intVal == 0) is_zero = true;
+                        }
+                    }
+                    auto it = version_stacks.find(id->getName());
+                    bool has_version = (it != version_stacks.end() && !it->second.empty());
+                    
+                    if (is_zero && has_version) {
+                        skip_init = true;
+                    }
+                }
+            }
+        }
+        
+        if (!skip_init) {
+            node->getInit()->accept(this);
+        }
     }
     
     std::string header_label = newLabel();
@@ -557,15 +535,12 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
     
     BasicBlock* entry_block = current_block;
     
-    // Запоминаем версии перед циклом
     auto before_loop_stacks = version_stacks;
     
-    // Прыгаем в заголовок
     auto jump_to_header = std::make_unique<Instruction>(InstrKind::JUMP);
     jump_to_header->target_label = header_label;
     emit(std::move(jump_to_header));
     
-    // Заголовок цикла
     auto label_header = std::make_unique<Instruction>(InstrKind::LABEL);
     label_header->dest = Operand::Label(header_label);
     emit(std::move(label_header));
@@ -615,7 +590,6 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
         version_stacks[var].push(phi_ver);
     }
     
-    // Проверка условия
     if (node->hasCondition()) {
         Operand cond = generateExpression(node->getCondition());
         auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
@@ -628,7 +602,6 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
     jump_to_body->target_label = body_label;
     emit(std::move(jump_to_body));
     
-    // Тело цикла
     auto label_body = std::make_unique<Instruction>(InstrKind::LABEL);
     label_body->dest = Operand::Label(body_label);
     emit(std::move(label_body));
@@ -640,7 +613,6 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
     jump_to_update->target_label = update_label;
     emit(std::move(jump_to_update));
     
-    // Блок обновления
     auto label_update = std::make_unique<Instruction>(InstrKind::LABEL);
     label_update->dest = Operand::Label(update_label);
     emit(std::move(label_update));
@@ -675,7 +647,6 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
         }
     }
     
-    // Exit блок
     auto label_exit = std::make_unique<Instruction>(InstrKind::LABEL);
     label_exit->dest = Operand::Label(exit_label);
     emit(std::move(label_exit));
@@ -691,7 +662,6 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
         }
     }
     
-    // Обновляем связи CFG
     if (entry_block) {
         entry_block->addSuccessor(header_block);
     }
@@ -709,6 +679,23 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
 
 void IRGenerator::visitReturnStmtNode(ReturnStmtNode* node) {
     if (node->hasValue()) {
+        ExpressionNode* val = node->getValue();
+        
+        if (auto* id = dynamic_cast<IdentifierExprNode*>(val)) {
+            std::string var_name = id->getName();
+            std::string current_ver = getCurrentVersion(var_name);
+            
+            if (!current_block->getInstructions().empty()) {
+                auto& last_instr = current_block->getInstructions().back();
+                if (last_instr->kind == InstrKind::MOVE && 
+                    last_instr->dest.kind == OperandKind::TEMP &&
+                    last_instr->dest.name == current_ver) {
+                    last_instr->kind = InstrKind::RETURN;
+                    return;
+                }
+            }
+        }
+        
         Operand value = generateExpression(node->getValue());
         auto instr = std::make_unique<Instruction>(InstrKind::RETURN);
         instr->src1 = value;
@@ -722,7 +709,6 @@ void IRGenerator::visitReturnStmtNode(ReturnStmtNode* node) {
 void IRGenerator::visitVarDeclStmtNode(VarDeclStmtNode* node) {
     std::string var_name = node->getName();
     
-    // Инициализация переменной
     if (node->hasInitializer()) {
         Operand value = generateExpression(node->getInitializer());
         storeVariable(var_name, value);
@@ -762,7 +748,6 @@ void IRGenerator::visitExprStmtNode(ExprStmtNode* node) {
     }
 }
 
-// Объявления
 void IRGenerator::visitFunctionDeclNode(FunctionDeclNode* node) {
     semantic::Type* ret_type = nullptr;
     std::string ret_type_str = node->getReturnType();
@@ -787,15 +772,12 @@ void IRGenerator::visitFunctionDeclNode(FunctionDeclNode* node) {
     auto func = std::make_unique<IRFunction>(node->getName(), ret_type);
     current_function = func.get();
     
-    // Сброс SSA-состояния для новой функции
     var_versions.clear();
     version_stacks.clear();
     
-    // Создаём entry блок
     current_block = current_function->createBlock("entry");
     current_function->setEntryBlock(current_block);
     
-    // Добавляем параметры с правильной инициализацией
     int param_index = 0;
     for (const auto& param : node->getParameters()) {
         semantic::Type* param_type = nullptr;
@@ -817,23 +799,19 @@ void IRGenerator::visitFunctionDeclNode(FunctionDeclNode* node) {
         
         current_function->addParameter(param->getName(), param_type);
         
-        // Создаём версию _0 для параметра
         pushVersion(param->getName());
         std::string versioned_name = getCurrentVersion(param->getName());
         
-        // Добавляем PARAM инструкцию
         auto param_instr = std::make_unique<Instruction>(InstrKind::PARAM);
         param_instr->src1 = Operand::ConstInt(param_index++);
         param_instr->src2 = Operand::Temp(versioned_name);
         current_block->addInstruction(std::move(param_instr));
     }
 
-    // Генерируем тело функции
     if (node->getBody()) {
         node->getBody()->accept(this);
     }
     
-    // Добавляем неявный RETURN для void функций
     if (ret_type_str == "void") {
         auto ret_instr = std::make_unique<Instruction>(InstrKind::RETURN);
         current_block->addInstruction(std::move(ret_instr));

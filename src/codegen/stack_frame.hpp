@@ -26,6 +26,7 @@ private:
     int spill_slots_size;
     std::vector<std::string> saved_registers;
     std::vector<StackVar> local_vars;
+    std::vector<StackVar> spill_vars;
     int current_offset;
     
 public:
@@ -34,6 +35,9 @@ public:
     // Выделение переменных
     int allocateVar(const std::string& name, int size, int alignment);
     int getVarOffset(const std::string& name) const;
+    
+    // Выделение spill-слотов
+    int allocateSpillSlot(const std::string& name, int size);
     
     // Сохранение регистров
     void saveRegister(const std::string& reg);
