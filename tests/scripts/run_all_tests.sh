@@ -20,14 +20,14 @@ run_test_suite() {
     local test_dir=$2
     local expected_dir=$3
     local category=$4
-    
+
     if [ -d "$test_dir" ]; then
         $script "$test_dir" "$expected_dir" "$category"
         local result=$?
-        
+
         local count=$(ls -1 "$test_dir"/*.src 2>/dev/null | wc -l)
         TOTAL_TESTS=$((TOTAL_TESTS + count))
-        
+
         if [ $result -eq 0 ]; then
             TOTAL_PASSED=$((TOTAL_PASSED + count))
         else
@@ -38,19 +38,18 @@ run_test_suite() {
 }
 
 run_codegen_tests() {
-    local category="CODEGEN-VALID"
-    local test_dir="tests/codegen/valid"
     local expected_dir="tests/codegen/valid/expected"
-    
-    if [ -d "$test_dir" ]; then
-        for subdir in "$test_dir"/*/; do
+
+    if [ -d "tests/codegen/valid" ]; then
+        for subdir in tests/codegen/valid/*/; do
             if [ -d "$subdir" ] && [ "$subdir" != "$expected_dir/" ]; then
+                local category="CODEGEN-VALID"
                 ./tests/scripts/test_codegen.sh "$subdir" "$expected_dir" "$category"
                 local result=$?
-                
+
                 local count=$(ls -1 "$subdir"/*.src 2>/dev/null | wc -l)
                 TOTAL_TESTS=$((TOTAL_TESTS + count))
-                
+
                 if [ $result -eq 0 ]; then
                     TOTAL_PASSED=$((TOTAL_PASSED + count))
                 else
@@ -60,20 +59,18 @@ run_codegen_tests() {
             fi
         done
     fi
-    
-    category="CODEGEN-INVALID"
-    test_dir="tests/codegen/invalid"
-    expected_dir="tests/codegen/invalid/expected"
-    
-    if [ -d "$test_dir" ]; then
-        for subdir in "$test_dir"/*/; do
-            if [ -d "$subdir" ] && [ "$subdir" != "$expected_dir/" ]; then
-                ./tests/scripts/test_codegen.sh "$subdir" "$expected_dir" "$category"
+
+    if [ -d "tests/codegen/invalid" ]; then
+        for subdir in tests/codegen/invalid/*/; do
+            local expected_invalid_dir="tests/codegen/invalid/expected"
+            if [ -d "$subdir" ] && [ "$subdir" != "$expected_invalid_dir/" ]; then
+                local category="CODEGEN-INVALID"
+                ./tests/scripts/test_codegen.sh "$subdir" "$expected_invalid_dir" "$category"
                 local result=$?
-                
+
                 local count=$(ls -1 "$subdir"/*.src 2>/dev/null | wc -l)
                 TOTAL_TESTS=$((TOTAL_TESTS + count))
-                
+
                 if [ $result -eq 0 ]; then
                     TOTAL_PASSED=$((TOTAL_PASSED + count))
                 else
@@ -89,10 +86,10 @@ run_integration_tests() {
     local script=$1
     $script
     local result=$?
-    
+
     local count=$(ls -1 examples/*.src 2>/dev/null | wc -l)
     TOTAL_TESTS=$((TOTAL_TESTS + count))
-    
+
     if [ $result -eq 0 ]; then
         TOTAL_PASSED=$((TOTAL_PASSED + count))
     else

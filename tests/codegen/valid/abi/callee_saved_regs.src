@@ -1,0 +1,19 @@
+fn inner(int x) -> int {
+    int a = 1;
+    int b = 2;
+    int c = 3;
+    a = a + 1;
+    b = b + 1;
+    c = c + 1;
+    return a + b + c + x;
+}
+
+fn main() -> int {
+    int result = 0;
+    int i = 0;
+    while (i < 3) {
+        result = result + inner(i);
+        i = i + 1;
+    }
+    return result;
+}

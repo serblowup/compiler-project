@@ -35,6 +35,7 @@ public:
         int const_fold_arith = 0;
         int const_fold_logic = 0;
         int const_fold_not = 0;
+        int const_fold_jump = 0;
         
         // Уменьшение силы операций
         int mul_to_add = 0;

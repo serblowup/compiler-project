@@ -12,6 +12,8 @@ class WhileStmtNode;
 class ForStmtNode;
 class ReturnStmtNode;
 class ExprStmtNode;
+class BreakStmtNode;
+class ContinueStmtNode;
 class BinaryExprNode;
 class UnaryExprNode;
 class LiteralExprNode;
@@ -34,6 +36,8 @@ public:
     virtual void visitForStmtNode(ForStmtNode* node) = 0;
     virtual void visitReturnStmtNode(ReturnStmtNode* node) = 0;
     virtual void visitExprStmtNode(ExprStmtNode* node) = 0;
+    virtual void visitBreakStmtNode(BreakStmtNode* node) = 0;
+    virtual void visitContinueStmtNode(ContinueStmtNode* node) = 0;
     virtual void visitBinaryExprNode(BinaryExprNode* node) = 0;
     virtual void visitUnaryExprNode(UnaryExprNode* node) = 0;
     virtual void visitLiteralExprNode(LiteralExprNode* node) = 0;

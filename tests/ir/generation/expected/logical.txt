@@ -5,11 +5,33 @@ function main: bool ()
   entry:
       a_1 = true
       b_1 = false
-      t1 = AND a_1, b_1
-      c_1 = t1
-      t2 = OR a_1, b_1
-      d_1 = t2
-      t3 = NOT a_1
-      e_1 = t3
+      JUMP_IF a_1, L4
+      JUMP L2
+  L4:
+      JUMP_IF b_1, L1
+      JUMP L2
+  L1:
+      t1 = true
+      JUMP L3
+  L2:
+      t2 = false
+  L3:
+      t3 = PHI (t1, L1), (t2, L2)
+      c_1 = t3
+      JUMP_IF a_1, L5
+      JUMP L8
+  L8:
+      JUMP_IF b_1, L5
+      JUMP L6
+  L5:
+      t4 = true
+      JUMP L7
+  L6:
+      t5 = false
+  L7:
+      t6 = PHI (t4, L5), (t5, L6)
+      d_1 = t6
+      t7 = NOT a_1
+      e_1 = t7
       RETURN d_1
 

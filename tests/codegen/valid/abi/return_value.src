@@ -1,0 +1,13 @@
+fn ret_int() -> int {
+    return 42;
+}
+
+fn ret_sum(int a, int b) -> int {
+    return a + b;
+}
+
+fn main() -> int {
+    int x = ret_int();
+    int y = ret_sum(10, 20);
+    return x + y;
+}

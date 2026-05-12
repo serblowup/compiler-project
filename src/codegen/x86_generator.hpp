@@ -33,6 +33,7 @@ private:
     bool current_block_ended;
     bool use_register_allocation;
     bool use_peephole_optimization;
+    bool is_leaf_function;
     
     std::string last_call_dest;
     
@@ -49,6 +50,7 @@ private:
     void loadToReg(const std::string& reg, const ir::Operand& src);
     void storeFromReg(const std::string& reg, const ir::Operand& dest);
     
+    bool isLeafFunction(const ir::IRFunction* func) const;
     void generatePrologue(const ir::IRFunction* func);
     void generateEpilogue(const ir::IRFunction* func);
     void generateInstruction(const ir::Instruction* instr);

@@ -78,19 +78,19 @@ std::string ABI::getRegName(const std::string& reg64, int size) {
         if (reg64 == "r15") return "r15b";
         return reg64;
     } else if (size == 4) {
+        if (reg64 == "r8")  return "r8d";
+        if (reg64 == "r9")  return "r9d";
+        if (reg64 == "r10") return "r10d";
+        if (reg64 == "r11") return "r11d";
+        if (reg64 == "r12") return "r12d";
+        if (reg64 == "r13") return "r13d";
+        if (reg64 == "r14") return "r14d";
+        if (reg64 == "r15") return "r15d";
         std::string r = reg64;
         if (r.length() >= 2 && r[0] == 'r') {
             r[0] = 'e';
             return r;
         }
-        if (r == "r8")  return "r8d";
-        if (r == "r9")  return "r9d";
-        if (r == "r10") return "r10d";
-        if (r == "r11") return "r11d";
-        if (r == "r12") return "r12d";
-        if (r == "r13") return "r13d";
-        if (r == "r14") return "r14d";
-        if (r == "r15") return "r15d";
         return reg64;
     }
     return reg64;

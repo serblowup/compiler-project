@@ -82,6 +82,8 @@ class Parser {
     std::unique_ptr<StatementNode> parseExprStmt();
     std::unique_ptr<StatementNode> parseEmptyStmt();
     std::unique_ptr<StatementNode> parseElsePart();
+    std::unique_ptr<StatementNode> parseBreakStmt();
+    std::unique_ptr<StatementNode> parseContinueStmt();
     
     std::unique_ptr<BlockStmtNode> parseBlock();
     

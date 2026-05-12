@@ -147,6 +147,14 @@ std::string DOTPrinter::visitNode(const ASTNode* node, std::ostream& out) {
         color = "lightpink";
         label = "Return [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
         shape = "box";
+    } else if (dynamic_cast<const BreakStmtNode*>(node)) {
+        color = "lightpink";
+        label = "Break [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
+        shape = "box";
+    } else if (dynamic_cast<const ContinueStmtNode*>(node)) {
+        color = "lightpink";
+        label = "Continue [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
+        shape = "box";
     } else if (dynamic_cast<const BlockStmtNode*>(node)) {
         color = "lightgray";
         label = "Block [" + std::to_string(node->getLine()) + ":" + std::to_string(node->getColumn()) + "]";
@@ -451,6 +459,14 @@ void JSONPrinter::visitNode(const ASTNode* node, std::ostringstream& out, int in
             out << "null";
         }
         out << "\n";
+    } else if (auto breakStmt = dynamic_cast<const BreakStmtNode*>(node)) {
+        out << indentStr2 << "\"type\": \"BreakStmt\",\n";
+        out << indentStr2 << "\"line\": " << breakStmt->getLine() << ",\n";
+        out << indentStr2 << "\"column\": " << breakStmt->getColumn() << "\n";
+    } else if (auto continueStmt = dynamic_cast<const ContinueStmtNode*>(node)) {
+        out << indentStr2 << "\"type\": \"ContinueStmt\",\n";
+        out << indentStr2 << "\"line\": " << continueStmt->getLine() << ",\n";
+        out << indentStr2 << "\"column\": " << continueStmt->getColumn() << "\n";
     } else if (auto exprStmt = dynamic_cast<const ExprStmtNode*>(node)) {
         out << indentStr2 << "\"type\": \"ExprStmt\",\n";
         out << indentStr2 << "\"line\": " << exprStmt->getLine() << ",\n";
@@ -646,6 +662,10 @@ void CodeGenerator::generateStatement(const StatementNode* stmt) {
         generateExprStmt(exprStmt);
     } else if (auto varDecl = dynamic_cast<const VarDeclStmtNode*>(stmt)) {
         generateVarDecl(varDecl);
+    } else if (dynamic_cast<const BreakStmtNode*>(stmt)) {
+        out << "break;\n";
+    } else if (dynamic_cast<const ContinueStmtNode*>(stmt)) {
+        out << "continue;\n";
     }
 }
 

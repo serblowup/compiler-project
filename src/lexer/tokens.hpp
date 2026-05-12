@@ -20,7 +20,10 @@ enum class TokenType {
      * - false;
      * - void;
      * - struct;
-     * - fn.
+     * - fn;
+     * - break;
+     * - continue;
+     * - var;
      */
     tkn_IF,
     tkn_ELSE,
@@ -35,6 +38,9 @@ enum class TokenType {
     tkn_VOID,
     tkn_STRUCT,
     tkn_FN,
+    tkn_BREAK,
+    tkn_CONTINUE,
+    tkn_VAR,
 
     // Идентификатор
     tkn_IDENTIFIER,
@@ -165,6 +171,9 @@ inline const char* token_type_to_string(TokenType type) {
         case TokenType::tkn_VOID: return "KW_VOID";
         case TokenType::tkn_STRUCT: return "KW_STRUCT";
         case TokenType::tkn_FN: return "KW_FN";
+        case TokenType::tkn_BREAK: return "KW_BREAK";
+        case TokenType::tkn_CONTINUE: return "KW_CONTINUE";
+        case TokenType::tkn_VAR: return "KW_VAR";
         
         // Идентификатор
         case TokenType::tkn_IDENTIFIER: return "IDENTIFIER";

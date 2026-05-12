@@ -14,7 +14,7 @@ whitespace = " " | "\t" | "\n" | "\r" ;
 identifier = letter, { letter | digit | "_" } ;
 (Максимальная длина: 255 символов)
 
-keyword = "if" | "else" | "while" | "for" | "int" | "float" | "bool" | "return" | "true" | "false" | "void" | "struct" | "fn" ;
+keyword = "if" | "else" | "while" | "for" | "int" | "float" | "bool" | "return" | "true" | "false" | "void" | "struct" | "fn" | "break" | "continue" | "var" ;
 ```
 
 ### 1.3. Литералы

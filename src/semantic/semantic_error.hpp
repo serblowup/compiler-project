@@ -29,6 +29,8 @@ namespace semantic {
 *  - переменная типа void
 *  - присваивание константе
 *  - несовместимые типы
+*  - break вне цикла
+*  - continue вне цикла
 */
 enum class SemanticErrorCode {
     UNDECLARED_IDENTIFIER,
@@ -49,7 +51,9 @@ enum class SemanticErrorCode {
     DUPLICATE_FIELD,
     VOID_VARIABLE,
     CONST_ASSIGNMENT,
-    INCOMPATIBLE_TYPES
+    INCOMPATIBLE_TYPES,
+    BREAK_OUTSIDE_LOOP,
+    CONTINUE_OUTSIDE_LOOP
 };
 
 inline std::string errorCodeToString(SemanticErrorCode code) {
@@ -92,6 +96,10 @@ inline std::string errorCodeToString(SemanticErrorCode code) {
             return "присваивание константе";
         case SemanticErrorCode::INCOMPATIBLE_TYPES:
             return "несовместимые типы";
+        case SemanticErrorCode::BREAK_OUTSIDE_LOOP:
+            return "break вне цикла";
+        case SemanticErrorCode::CONTINUE_OUTSIDE_LOOP:
+            return "continue вне цикла";
         default:
             return "семантическая ошибка";
     }
@@ -270,6 +278,12 @@ struct SemanticError {
                 break;
             case SemanticErrorCode::INVALID_ASSIGNMENT_TARGET:
                 suggestion = "левая часть присваивания должна быть изменяемой (переменная или поле)";
+                break;
+            case SemanticErrorCode::BREAK_OUTSIDE_LOOP:
+                suggestion = "оператор break может использоваться только внутри цикла (while/for)";
+                break;
+            case SemanticErrorCode::CONTINUE_OUTSIDE_LOOP:
+                suggestion = "оператор continue может использоваться только внутри цикла (while/for)";
                 break;
             default:
                 suggestion = "";

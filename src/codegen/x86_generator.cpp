@@ -16,6 +16,7 @@ X86Generator::X86Generator()
     , current_block_ended(false)
     , use_register_allocation(true)
     , use_peephole_optimization(true)
+    , is_leaf_function(false)
     , last_call_dest("")
 {
 }
@@ -204,6 +205,17 @@ void X86Generator::storeFromReg(const std::string& reg, const ir::Operand& dest)
     }
 }
 
+bool X86Generator::isLeafFunction(const ir::IRFunction* func) const {
+    for (const auto& block : func->getBlocks()) {
+        for (const auto& instr : block->getInstructions()) {
+            if (instr->kind == ir::InstrKind::CALL) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 void X86Generator::generatePrologue(const ir::IRFunction* func) {
     emitComment("Function prologue: " + func->getName());
     
@@ -211,13 +223,23 @@ void X86Generator::generatePrologue(const ir::IRFunction* func) {
     emit("mov rbp, rsp");
     
     int stack_size = current_frame ? current_frame->getTotalStackSize() : 0;
-    if (stack_size > 0) {
+    int total_frame_size = stack_size;
+    
+    if (current_frame) {
+        total_frame_size += current_frame->getSavedRegsSize();
+    }
+    
+    const auto& saved_regs = current_frame ? current_frame->getSavedRegisters() : std::vector<std::string>();
+    bool use_red_zone = is_leaf_function && total_frame_size <= ABI::RED_ZONE_SIZE && saved_regs.empty();
+    
+    if (use_red_zone) {
+        emitComment("Leaf function - using red zone");
+    } else if (stack_size > 0) {
         emit("sub rsp, " + std::to_string(stack_size));
         emitComment("Allocated " + std::to_string(stack_size) + " bytes for locals");
     }
     
     if (current_frame) {
-        const auto& saved_regs = current_frame->getSavedRegisters();
         for (const auto& reg : saved_regs) {
             if (reg != "rbp" && reg != "rsp") {
                 emit("push " + reg);
@@ -674,6 +696,7 @@ void X86Generator::generateFunction(const ir::IRFunction* func) {
     var_mapping.clear();
     current_block_ended = false;
     last_call_dest = "";
+    is_leaf_function = isLeafFunction(func);
     
     StackFrame frame = StackFrameAnalyzer::analyze(func);
     

@@ -38,6 +38,12 @@ private:
     };
     std::stack<ShortCircuitContext> short_circuit_stack;
     
+    struct LoopContext {
+        std::string break_label;
+        std::string continue_label;
+    };
+    std::stack<LoopContext> loop_stack;
+    
     // Вспомогательные методы
     std::string newTemp();
     std::string newLabel();
@@ -63,6 +69,9 @@ private:
     void generateLogicalExpression(BinaryExprNode* node, 
                                    const std::string& true_label,
                                    const std::string& false_label);
+    void generateLogicalExpression(ExpressionNode* expr,
+                                   const std::string& true_label,
+                                   const std::string& false_label);
     
     // Visitor методы для объявлений
     void visitProgramNode(ProgramNode* node) override;
@@ -78,6 +87,8 @@ private:
     void visitReturnStmtNode(ReturnStmtNode* node) override;
     void visitVarDeclStmtNode(VarDeclStmtNode* node) override;
     void visitExprStmtNode(ExprStmtNode* node) override;
+    void visitBreakStmtNode(BreakStmtNode* node) override;
+    void visitContinueStmtNode(ContinueStmtNode* node) override;
     
     // Visitor методы для выражений
     void visitBinaryExprNode(BinaryExprNode* node) override;

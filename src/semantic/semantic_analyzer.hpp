@@ -5,7 +5,7 @@
 #include "type_checker.hpp"
 #include "semantic_error.hpp"
 #include "../parser/ast.hpp"
-#include "../parser/ast_visitor.hpp" 
+#include "../parser/ast_visitor.hpp"
 #include <vector>
 #include <memory>
 #include <string>
@@ -34,21 +34,21 @@ namespace semantic {
         bool inFunctionBody;
 
         Type* errorType;
-        
+
         struct MemoryLayoutInfo {
             std::string functionName;
             int totalStackSize = 0;
             std::vector<std::tuple<std::string, std::string, int, int>> variables; // name, type, offset, size
         };
         std::vector<MemoryLayoutInfo> memoryLayouts;
-        
+
         struct TypeStats {
             int totalExpressions = 0;
             int typedExpressions = 0;
             int errorTypes = 0;
             std::map<std::string, int> typeDistribution;
         } typeStats;
-        
+
         void recordType(Type* type);
 
         void reportError(int line, int column, SemanticErrorCode code, const std::string& message);
@@ -72,7 +72,7 @@ namespace semantic {
         Type* checkAssignment(AssignmentExprNode* node);
 
         Type* checkFunctionCall(CallExprNode* node);
-        
+
         void calculateMemoryLayout(FunctionDeclNode* func, int& currentOffset, std::vector<std::tuple<std::string, std::string, int, int>>& variables);
 
     public:
@@ -94,11 +94,11 @@ namespace semantic {
         std::string getAllErrors() const;
 
         void clear();
-        
+
         std::string getDecoratedASTString() const;
-        
+
         std::string getValidationReport() const;
-        
+
         struct TypeStatistics {
             int totalExpressions = 0;
             int typedExpressions = 0;
@@ -106,9 +106,9 @@ namespace semantic {
             std::map<std::string, int> typeDistribution;
         };
         TypeStatistics getTypeStatistics() const;
-        
+
         std::string getTypeHierarchy() const;
-        
+
         std::vector<MemoryLayoutInfo> getMemoryLayout() const;
 
         // Visitor методы для обхода AST
@@ -123,6 +123,8 @@ namespace semantic {
         void visitForStmtNode(ForStmtNode* node) override;
         void visitReturnStmtNode(ReturnStmtNode* node) override;
         void visitExprStmtNode(ExprStmtNode* node) override;
+        void visitBreakStmtNode(BreakStmtNode* node) override;
+        void visitContinueStmtNode(ContinueStmtNode* node) override;
 
         // Методы для выражений
         void visitBinaryExprNode(BinaryExprNode* node) override;

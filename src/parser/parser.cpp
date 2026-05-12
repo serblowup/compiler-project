@@ -774,9 +774,13 @@ std::unique_ptr<StatementNode> Parser::parseStatement() {
         result = parseForStmt();
     } else if (check(TokenType::tkn_RETURN)) {
         result = parseReturnStmt();
+    } else if (check(TokenType::tkn_BREAK)) {
+        result = parseBreakStmt();
+    } else if (check(TokenType::tkn_CONTINUE)) {
+        result = parseContinueStmt();
     } else if (check({TokenType::tkn_INT, TokenType::tkn_FLOAT, 
                       TokenType::tkn_BOOL, TokenType::tkn_VOID,
-                      TokenType::tkn_STRUCT})) {
+                      TokenType::tkn_STRUCT, TokenType::tkn_VAR})) {
         result = parseVarDecl();
     } else if (check(TokenType::tkn_IDENTIFIER)) {
         if (current + 1 < tokens.size() && 
@@ -890,7 +894,7 @@ std::unique_ptr<StatementNode> Parser::parseForStmt() {
     
     if (check({TokenType::tkn_INT, TokenType::tkn_FLOAT, 
                TokenType::tkn_BOOL, TokenType::tkn_VOID,
-               TokenType::tkn_STRUCT})) {
+               TokenType::tkn_STRUCT, TokenType::tkn_VAR})) {
         init = parseVarDecl();
     } else if (check(TokenType::tkn_IDENTIFIER)) {
         if (current + 1 < tokens.size() && 
@@ -1041,6 +1045,64 @@ std::unique_ptr<StatementNode> Parser::parseEmptyStmt() {
         semicolon.line, semicolon.column,
         nullptr
     );
+}
+
+std::unique_ptr<StatementNode> Parser::parseBreakStmt() {
+    Token breakToken = previous();
+    if (breakToken.type != TokenType::tkn_BREAK) {
+        breakToken = advance();
+    }
+    
+    if (check(TokenType::tkn_SEMICOLON)) {
+        advance();
+    } else if (!check(TokenType::tkn_RBRACE) && !isAtEnd()) {
+        reportError("Ожидалась ';' после break", peek(), ErrorCode::EXPECTED_SEMICOLON);
+        if (!in_error_recovery) {
+            in_error_recovery = true;
+            int recover_iterations = 0;
+            while (!isAtEnd() && !check(TokenType::tkn_SEMICOLON) && 
+                   !check(TokenType::tkn_RBRACE) && recover_iterations < 100) {
+                advance();
+                recover_iterations++;
+            }
+            if (check(TokenType::tkn_SEMICOLON)) {
+                advance();
+                metrics.mark_recovered(RecoveryType::PANIC_MODE);
+            }
+            in_error_recovery = false;
+        }
+    }
+    
+    return std::make_unique<BreakStmtNode>(breakToken.line, breakToken.column);
+}
+
+std::unique_ptr<StatementNode> Parser::parseContinueStmt() {
+    Token continueToken = previous();
+    if (continueToken.type != TokenType::tkn_CONTINUE) {
+        continueToken = advance();
+    }
+    
+    if (check(TokenType::tkn_SEMICOLON)) {
+        advance();
+    } else if (!check(TokenType::tkn_RBRACE) && !isAtEnd()) {
+        reportError("Ожидалась ';' после continue", peek(), ErrorCode::EXPECTED_SEMICOLON);
+        if (!in_error_recovery) {
+            in_error_recovery = true;
+            int recover_iterations = 0;
+            while (!isAtEnd() && !check(TokenType::tkn_SEMICOLON) && 
+                   !check(TokenType::tkn_RBRACE) && recover_iterations < 100) {
+                advance();
+                recover_iterations++;
+            }
+            if (check(TokenType::tkn_SEMICOLON)) {
+                advance();
+                metrics.mark_recovered(RecoveryType::PANIC_MODE);
+            }
+            in_error_recovery = false;
+        }
+    }
+    
+    return std::make_unique<ContinueStmtNode>(continueToken.line, continueToken.column);
 }
 
 std::unique_ptr<BlockStmtNode> Parser::parseBlock() {

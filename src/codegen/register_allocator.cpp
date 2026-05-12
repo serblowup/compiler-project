@@ -215,6 +215,17 @@ void RegisterAllocator::allocateRegisters(const ir::IRFunction* func) {
         pair.second.var_name = "";
     }
     
+    bool has_calls = false;
+    for (const auto& block : func->getBlocks()) {
+        for (const auto& instr : block->getInstructions()) {
+            if (instr->kind == ir::InstrKind::CALL) {
+                has_calls = true;
+                break;
+            }
+        }
+        if (has_calls) break;
+    }
+    
     std::unordered_map<std::string, std::vector<LiveRange*>> base_groups;
     for (auto& lr : live_ranges) {
         std::string base = extractBaseName(lr.var_name);
@@ -222,8 +233,40 @@ void RegisterAllocator::allocateRegisters(const ir::IRFunction* func) {
     }
     
     std::unordered_set<std::string> pre_spilled_vars;
+    
+    if (has_calls) {
+        for (auto& [base, ranges] : base_groups) {
+            bool is_user_var = false;
+            for (auto* lr : ranges) {
+                std::string name = lr->var_name;
+                if (name[0] != 't' && name.find('_') != std::string::npos) {
+                    is_user_var = true;
+                    break;
+                }
+            }
+            
+            if (is_user_var) {
+                int slot = -(8 + next_spill_offset);
+                next_spill_offset += 4;
+                next_spill_offset = (next_spill_offset + 3) & ~3;
+                max_spill_offset = std::max(max_spill_offset, next_spill_offset);
+                
+                std::string mem_ref = "dword [rbp" + std::to_string(slot) + "]";
+                
+                for (auto* lr : ranges) {
+                    lr->is_spilled = true;
+                    lr->spill_slot = slot;
+                    var_to_mem[lr->var_name] = mem_ref;
+                    pre_spilled_vars.insert(lr->var_name);
+                    vars_spilled++;
+                }
+            }
+        }
+    }
+    
     for (auto& [base, ranges] : base_groups) {
         if (ranges.size() <= 1) continue;
+        if (pre_spilled_vars.count(ranges[0]->var_name) > 0) continue;
         
         int slot = -(8 + next_spill_offset);
         next_spill_offset += 4;

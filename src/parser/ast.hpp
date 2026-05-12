@@ -365,6 +365,24 @@ public:
     void accept(ASTVisitor* visitor) override;
 };
 
+class BreakStmtNode : public StatementNode {
+public:
+    BreakStmtNode(int line, int column)
+    : StatementNode(line, column) {}
+
+    std::string toString() const override;
+    void accept(ASTVisitor* visitor) override;
+};
+
+class ContinueStmtNode : public StatementNode {
+public:
+    ContinueStmtNode(int line, int column)
+    : StatementNode(line, column) {}
+
+    std::string toString() const override;
+    void accept(ASTVisitor* visitor) override;
+};
+
 class ParamNode : public ASTNode {
     std::string type;
     std::string name;

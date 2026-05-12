@@ -111,6 +111,61 @@ Operand IRGenerator::generateExpression(ExpressionNode* expr) {
     return result;
 }
 
+void IRGenerator::generateLogicalExpression(BinaryExprNode* node, 
+                                             const std::string& true_label,
+                                             const std::string& false_label) {
+    TokenType op = node->getOperator();
+    
+    if (op == TokenType::tkn_AND) {
+        std::string next_label = newLabel();
+        generateLogicalExpression(node->getLeft(), next_label, false_label);
+        
+        auto label_instr = std::make_unique<Instruction>(InstrKind::LABEL);
+        label_instr->dest = Operand::Label(next_label);
+        emit(std::move(label_instr));
+        
+        generateLogicalExpression(node->getRight(), true_label, false_label);
+        return;
+    }
+    
+    if (op == TokenType::tkn_OR) {
+        std::string next_label = newLabel();
+        generateLogicalExpression(node->getLeft(), true_label, next_label);
+        
+        auto label_instr = std::make_unique<Instruction>(InstrKind::LABEL);
+        label_instr->dest = Operand::Label(next_label);
+        emit(std::move(label_instr));
+        
+        generateLogicalExpression(node->getRight(), true_label, false_label);
+        return;
+    }
+    
+    generateLogicalExpression(static_cast<ExpressionNode*>(node), true_label, false_label);
+}
+
+void IRGenerator::generateLogicalExpression(ExpressionNode* expr,
+                                             const std::string& true_label,
+                                             const std::string& false_label) {
+    if (auto* bin = dynamic_cast<BinaryExprNode*>(expr)) {
+        TokenType op = bin->getOperator();
+        if (op == TokenType::tkn_AND || op == TokenType::tkn_OR) {
+            generateLogicalExpression(bin, true_label, false_label);
+            return;
+        }
+    }
+    
+    Operand result = generateExpression(expr);
+    
+    auto jmp_true = std::make_unique<Instruction>(InstrKind::JUMP_IF);
+    jmp_true->src1 = result;
+    jmp_true->target_label = true_label;
+    emit(std::move(jmp_true));
+    
+    auto jmp_false = std::make_unique<Instruction>(InstrKind::JUMP);
+    jmp_false->target_label = false_label;
+    emit(std::move(jmp_false));
+}
+
 void IRGenerator::visitLiteralExprNode(LiteralExprNode* node) {
     if (auto val = node->getValue<int>()) {
         expr_stack.push(Operand::ConstInt(*val));
@@ -132,6 +187,48 @@ void IRGenerator::visitIdentifierExprNode(IdentifierExprNode* node) {
 void IRGenerator::visitBinaryExprNode(BinaryExprNode* node) {
     TokenType op = node->getOperator();
     
+    if (op == TokenType::tkn_AND || op == TokenType::tkn_OR) {
+        std::string true_label = newLabel();
+        std::string false_label = newLabel();
+        std::string end_label = newLabel();
+        
+        generateLogicalExpression(node, true_label, false_label);
+        
+        auto label_true = std::make_unique<Instruction>(InstrKind::LABEL);
+        label_true->dest = Operand::Label(true_label);
+        emit(std::move(label_true));
+        
+        Operand result = Operand::Temp(newTemp());
+        emit(InstrKind::MOVE, result, Operand::ConstBool(true));
+        
+        auto jmp_end = std::make_unique<Instruction>(InstrKind::JUMP);
+        jmp_end->target_label = end_label;
+        emit(std::move(jmp_end));
+        
+        auto label_false = std::make_unique<Instruction>(InstrKind::LABEL);
+        label_false->dest = Operand::Label(false_label);
+        emit(std::move(label_false));
+        
+        Operand result_false = Operand::Temp(newTemp());
+        emit(InstrKind::MOVE, result_false, Operand::ConstBool(false));
+        
+        auto label_end = std::make_unique<Instruction>(InstrKind::LABEL);
+        label_end->dest = Operand::Label(end_label);
+        emit(std::move(label_end));
+        
+        Operand phi_result = Operand::Temp(newTemp());
+        auto phi_instr = std::make_unique<Instruction>(InstrKind::PHI);
+        phi_instr->dest = phi_result;
+        phi_instr->args.push_back(result);
+        phi_instr->args.push_back(Operand::Label(true_label));
+        phi_instr->args.push_back(result_false);
+        phi_instr->args.push_back(Operand::Label(false_label));
+        emit(std::move(phi_instr));
+        
+        expr_stack.push(phi_result);
+        return;
+    }
+    
     Operand left = generateExpression(node->getLeft());
     Operand right = generateExpression(node->getRight());
     
@@ -148,8 +245,6 @@ void IRGenerator::visitBinaryExprNode(BinaryExprNode* node) {
         case TokenType::tkn_LESS_OR_EQUAL: kind = InstrKind::CMP_LE; break;
         case TokenType::tkn_MORE: kind = InstrKind::CMP_GT; break;
         case TokenType::tkn_MORE_OR_EQUAL: kind = InstrKind::CMP_GE; break;
-        case TokenType::tkn_AND: kind = InstrKind::AND; break;
-        case TokenType::tkn_OR: kind = InstrKind::OR; break;
         default: kind = InstrKind::MOVE; break;
     }
     
@@ -230,16 +325,31 @@ void IRGenerator::visitIfStmtNode(IfStmtNode* node) {
     
     auto before_if_stacks = version_stacks;
     
-    Operand cond = generateExpression(node->getCondition());
-    
-    auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
-    jump_if_not->src1 = cond;
-    jump_if_not->target_label = else_label;
-    emit(std::move(jump_if_not));
-    
-    auto jump_to_then = std::make_unique<Instruction>(InstrKind::JUMP);
-    jump_to_then->target_label = then_label;
-    emit(std::move(jump_to_then));
+    ExpressionNode* condExpr = node->getCondition();
+    if (auto* binExpr = dynamic_cast<BinaryExprNode*>(condExpr)) {
+        TokenType op = binExpr->getOperator();
+        if (op == TokenType::tkn_AND || op == TokenType::tkn_OR) {
+            generateLogicalExpression(binExpr, then_label, else_label);
+        } else {
+            Operand cond = generateExpression(condExpr);
+            auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
+            jump_if_not->src1 = cond;
+            jump_if_not->target_label = else_label;
+            emit(std::move(jump_if_not));
+            auto jump_to_then = std::make_unique<Instruction>(InstrKind::JUMP);
+            jump_to_then->target_label = then_label;
+            emit(std::move(jump_to_then));
+        }
+    } else {
+        Operand cond = generateExpression(condExpr);
+        auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
+        jump_if_not->src1 = cond;
+        jump_if_not->target_label = else_label;
+        emit(std::move(jump_if_not));
+        auto jump_to_then = std::make_unique<Instruction>(InstrKind::JUMP);
+        jump_to_then->target_label = then_label;
+        emit(std::move(jump_to_then));
+    }
     
     BasicBlock* else_block = nullptr;
     BasicBlock* then_block = nullptr;
@@ -376,6 +486,11 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
     
     BasicBlock* entry_block = current_block;
     
+    LoopContext loop_ctx;
+    loop_ctx.break_label = exit_label;
+    loop_ctx.continue_label = header_label;
+    loop_stack.push(loop_ctx);
+    
     auto before_loop_stacks = version_stacks;
     
     auto jump_to_header = std::make_unique<Instruction>(InstrKind::JUMP);
@@ -431,16 +546,31 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
         version_stacks[var].push(phi_ver);
     }
     
-    Operand cond = generateExpression(node->getCondition());
-    
-    auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
-    jump_if_not->src1 = cond;
-    jump_if_not->target_label = exit_label;
-    emit(std::move(jump_if_not));
-    
-    auto jump_to_body = std::make_unique<Instruction>(InstrKind::JUMP);
-    jump_to_body->target_label = body_label;
-    emit(std::move(jump_to_body));
+    ExpressionNode* condExpr = node->getCondition();
+    if (auto* binExpr = dynamic_cast<BinaryExprNode*>(condExpr)) {
+        TokenType op = binExpr->getOperator();
+        if (op == TokenType::tkn_AND || op == TokenType::tkn_OR) {
+            generateLogicalExpression(binExpr, body_label, exit_label);
+        } else {
+            Operand cond = generateExpression(condExpr);
+            auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
+            jump_if_not->src1 = cond;
+            jump_if_not->target_label = exit_label;
+            emit(std::move(jump_if_not));
+            auto jump_to_body = std::make_unique<Instruction>(InstrKind::JUMP);
+            jump_to_body->target_label = body_label;
+            emit(std::move(jump_to_body));
+        }
+    } else {
+        Operand cond = generateExpression(condExpr);
+        auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
+        jump_if_not->src1 = cond;
+        jump_if_not->target_label = exit_label;
+        emit(std::move(jump_if_not));
+        auto jump_to_body = std::make_unique<Instruction>(InstrKind::JUMP);
+        jump_to_body->target_label = body_label;
+        emit(std::move(jump_to_body));
+    }
     
     auto label_body = std::make_unique<Instruction>(InstrKind::LABEL);
     label_body->dest = Operand::Label(body_label);
@@ -499,6 +629,8 @@ void IRGenerator::visitWhileStmtNode(WhileStmtNode* node) {
     if (body_block) {
         body_block->addSuccessor(header_block);
     }
+    
+    loop_stack.pop();
 }
 
 void IRGenerator::visitForStmtNode(ForStmtNode* node) {
@@ -534,6 +666,11 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
     std::string exit_label = newLabel();
     
     BasicBlock* entry_block = current_block;
+    
+    LoopContext loop_ctx;
+    loop_ctx.break_label = exit_label;
+    loop_ctx.continue_label = update_label;
+    loop_stack.push(loop_ctx);
     
     auto before_loop_stacks = version_stacks;
     
@@ -591,11 +728,25 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
     }
     
     if (node->hasCondition()) {
-        Operand cond = generateExpression(node->getCondition());
-        auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
-        jump_if_not->src1 = cond;
-        jump_if_not->target_label = exit_label;
-        emit(std::move(jump_if_not));
+        ExpressionNode* condExpr = node->getCondition();
+        if (auto* binExpr = dynamic_cast<BinaryExprNode*>(condExpr)) {
+            TokenType op = binExpr->getOperator();
+            if (op == TokenType::tkn_AND || op == TokenType::tkn_OR) {
+                generateLogicalExpression(binExpr, body_label, exit_label);
+            } else {
+                Operand cond = generateExpression(condExpr);
+                auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
+                jump_if_not->src1 = cond;
+                jump_if_not->target_label = exit_label;
+                emit(std::move(jump_if_not));
+            }
+        } else {
+            Operand cond = generateExpression(condExpr);
+            auto jump_if_not = std::make_unique<Instruction>(InstrKind::JUMP_IF_NOT);
+            jump_if_not->src1 = cond;
+            jump_if_not->target_label = exit_label;
+            emit(std::move(jump_if_not));
+        }
     }
     
     auto jump_to_body = std::make_unique<Instruction>(InstrKind::JUMP);
@@ -675,6 +826,8 @@ void IRGenerator::visitForStmtNode(ForStmtNode* node) {
     if (update_block) {
         update_block->addSuccessor(header_block);
     }
+    
+    loop_stack.pop();
 }
 
 void IRGenerator::visitReturnStmtNode(ReturnStmtNode* node) {
@@ -689,7 +842,8 @@ void IRGenerator::visitReturnStmtNode(ReturnStmtNode* node) {
                 auto& last_instr = current_block->getInstructions().back();
                 if (last_instr->kind == InstrKind::MOVE && 
                     last_instr->dest.kind == OperandKind::TEMP &&
-                    last_instr->dest.name == current_ver) {
+                    last_instr->dest.name == current_ver &&
+                    last_instr->src1.kind == OperandKind::TEMP) {
                     last_instr->kind = InstrKind::RETURN;
                     return;
                 }
@@ -745,6 +899,26 @@ void IRGenerator::visitVarDeclStmtNode(VarDeclStmtNode* node) {
 void IRGenerator::visitExprStmtNode(ExprStmtNode* node) {
     if (node->getExpression()) {
         generateExpression(node->getExpression());
+    }
+}
+
+void IRGenerator::visitBreakStmtNode(BreakStmtNode* node) {
+    (void)node;
+    if (!loop_stack.empty()) {
+        auto ctx = loop_stack.top();
+        auto jmp = std::make_unique<Instruction>(InstrKind::JUMP);
+        jmp->target_label = ctx.break_label;
+        emit(std::move(jmp));
+    }
+}
+
+void IRGenerator::visitContinueStmtNode(ContinueStmtNode* node) {
+    (void)node;
+    if (!loop_stack.empty()) {
+        auto ctx = loop_stack.top();
+        auto jmp = std::make_unique<Instruction>(InstrKind::JUMP);
+        jmp->target_label = ctx.continue_label;
+        emit(std::move(jmp));
     }
 }
 
@@ -857,6 +1031,7 @@ void IRGenerator::reset() {
     
     while (!expr_stack.empty()) expr_stack.pop();
     while (!short_circuit_stack.empty()) short_circuit_stack.pop();
+    while (!loop_stack.empty()) loop_stack.pop();
 }
 
 }

@@ -21,7 +21,7 @@ std::string IROptimizer::OptimizationReport::toString() const {
                           sub_zero + sub_self + div_one + cmp_gt_zero + cmp_eq_zero +
                           cmp_ne_zero + and_true + and_false + or_false + or_true;
     
-    int total_const_fold = const_fold_arith + const_fold_logic + const_fold_not;
+    int total_const_fold = const_fold_arith + const_fold_logic + const_fold_not + const_fold_jump;
     
     int total_ssa_opt = const_propagation + copy_propagation + redundant_phis + unreachable_code;
     
@@ -163,6 +163,16 @@ void IROptimizer::optimizeFunction(IRFunction* func) {
         if (eliminateRedundantMoves(func)) {
             changed = true;
         }
+        
+        if (constantPropagation(func)) {
+            changed = true;
+        }
+        if (eliminateRedundantPhis(func)) {
+            changed = true;
+        }
+        if (removeUnreachableBlocks(func)) {
+            changed = true;
+        }
     }
     
     report.optimization_iterations += iteration;
@@ -204,11 +214,33 @@ bool IROptimizer::isConstantValue(const Operand& op, int& value) {
         value = op.int_value;
         return true;
     }
+    if (op.kind == OperandKind::CONST_BOOL) {
+        value = op.bool_value ? 1 : 0;
+        return true;
+    }
     return false;
 }
 
 // Свёртка констант
 bool IROptimizer::constantFold(Instruction* instr) {
+    // JUMP_IF true, L → JUMP L
+    if (instr->kind == InstrKind::JUMP_IF && isTrue(instr->src1)) {
+        instr->kind = InstrKind::JUMP;
+        instr->src1 = Operand::Temp("");
+        report.const_fold_jump++;
+        report.total_instructions_removed++;
+        return true;
+    }
+    
+    // JUMP_IF_NOT false, L → JUMP L
+    if (instr->kind == InstrKind::JUMP_IF_NOT && isFalse(instr->src1)) {
+        instr->kind = InstrKind::JUMP;
+        instr->src1 = Operand::Temp("");
+        report.const_fold_jump++;
+        report.total_instructions_removed++;
+        return true;
+    }
+    
     // Арифметическая свёртка
     if (instr->kind == InstrKind::ADD ||
         instr->kind == InstrKind::SUB ||

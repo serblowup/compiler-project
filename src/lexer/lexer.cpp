@@ -193,6 +193,9 @@ Token Lexer::lexer_make_identifier() {
     else if (identifier == "void") type = TokenType::tkn_VOID;
     else if (identifier == "struct") type = TokenType::tkn_STRUCT;
     else if (identifier == "fn") type = TokenType::tkn_FN;
+    else if (identifier == "break") type = TokenType::tkn_BREAK;
+    else if (identifier == "continue") type = TokenType::tkn_CONTINUE;
+    else if (identifier == "var") type = TokenType::tkn_VAR;
 
     // Создаем токен
     return lexer_make_token(type);

@@ -25,6 +25,7 @@ std::string PeepholeOptimizer::OptimizationStats::toString() const {
     oss << "  inc/dec replacements:     " << inc_dec_replacements << "\n";
     oss << "  xor zero replacements:    " << xor_zero_replacements << "\n";
     oss << "  test before jump removed: " << test_removed << "\n";
+    oss << "  self moves removed:       " << self_moves_removed << "\n";
     oss << "  Total instructions removed: " << total_removed << "\n";
     return oss.str();
 }
@@ -466,6 +467,113 @@ bool PeepholeOptimizer::applyTestBeforeJumpElimination(std::vector<AsmLine>& lin
     return changed;
 }
 
+bool PeepholeOptimizer::applySelfMoveElimination(std::vector<AsmLine>& lines) {
+    bool changed = false;
+    std::vector<AsmLine> result;
+    
+    for (size_t i = 0; i < lines.size(); ++i) {
+        AsmLine& line = lines[i];
+        bool skip = false;
+        
+        if (!line.is_label && !line.is_directive && line.instruction == "mov" && !line.operands.empty()) {
+            size_t comma = line.operands.find(',');
+            if (comma != std::string::npos) {
+                std::string dest = line.operands.substr(0, comma);
+                std::string src = line.operands.substr(comma + 1);
+                
+                dest.erase(0, dest.find_first_not_of(" \t"));
+                dest.erase(dest.find_last_not_of(" \t") + 1);
+                src.erase(0, src.find_first_not_of(" \t"));
+                src.erase(src.find_last_not_of(" \t") + 1);
+                
+                if (dest == src && dest.find('[') == std::string::npos) {
+                    skip = true;
+                    stats.self_moves_removed++;
+                    stats.total_removed++;
+                    changed = true;
+                }
+            }
+        }
+        
+        if (!skip) {
+            result.push_back(line);
+        }
+    }
+    
+    if (changed) {
+        lines = std::move(result);
+    }
+    return changed;
+}
+
+bool PeepholeOptimizer::applySwapMoveElimination(std::vector<AsmLine>& lines) {
+    bool changed = false;
+    std::vector<AsmLine> result;
+    
+    for (size_t i = 0; i < lines.size(); ++i) {
+        if (i + 1 < lines.size()) {
+            AsmLine& curr = lines[i];
+            AsmLine& next = lines[i + 1];
+            
+            if (curr.instruction == "mov" && next.instruction == "mov" &&
+                !curr.operands.empty() && !next.operands.empty() &&
+                !curr.is_label && !next.is_label) {
+                
+                bool curr_is_reg = curr.operands.find('[') == std::string::npos;
+                bool next_is_reg = next.operands.find('[') == std::string::npos;
+                
+                if (curr_is_reg && next_is_reg) {
+                    std::string curr_dest, curr_src, next_dest, next_src;
+                    
+                    size_t comma1 = curr.operands.find(',');
+                    if (comma1 != std::string::npos) {
+                        curr_dest = curr.operands.substr(0, comma1);
+                        curr_src = curr.operands.substr(comma1 + 1);
+                        curr_dest.erase(0, curr_dest.find_first_not_of(" \t"));
+                        curr_dest.erase(curr_dest.find_last_not_of(" \t") + 1);
+                        curr_src.erase(0, curr_src.find_first_not_of(" \t"));
+                        curr_src.erase(curr_src.find_last_not_of(" \t") + 1);
+                    }
+                    
+                    size_t comma2 = next.operands.find(',');
+                    if (comma2 != std::string::npos) {
+                        next_dest = next.operands.substr(0, comma2);
+                        next_src = next.operands.substr(comma2 + 1);
+                        next_dest.erase(0, next_dest.find_first_not_of(" \t"));
+                        next_dest.erase(next_dest.find_last_not_of(" \t") + 1);
+                        next_src.erase(0, next_src.find_first_not_of(" \t"));
+                        next_src.erase(next_src.find_last_not_of(" \t") + 1);
+                    }
+                    
+                    if (curr_dest == next_src && curr_src == next_dest && 
+                        curr_dest != curr_src) {
+                        
+                        bool safe = true;
+                        if (next_dest == "eax" && i + 2 < lines.size()) {
+                            AsmLine& after = lines[i + 2];
+                            if (after.instruction == "ret") safe = false;
+                        }
+                        if (safe) {
+                            result.push_back(curr);
+                            i++;
+                            stats.redundant_moves_removed++;
+                            stats.total_removed++;
+                            changed = true;
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+        result.push_back(lines[i]);
+    }
+    
+    if (changed) {
+        lines = std::move(result);
+    }
+    return changed;
+}
+
 std::string PeepholeOptimizer::optimize(const std::string& asm_code) {
     resetStats();
     
@@ -487,6 +595,8 @@ std::string PeepholeOptimizer::optimize(const std::string& asm_code) {
     while (changed && iteration < max_iterations) {
         changed = false;
         
+        if (applySelfMoveElimination(lines)) changed = true;
+        if (applySwapMoveElimination(lines)) changed = true;
         if (applyRedundantMoveElimination(lines)) changed = true;
         if (applyStoreLoadElimination(lines)) changed = true;
         if (applyIncDecReplacement(lines)) changed = true;

@@ -791,6 +791,22 @@ namespace semantic {
                         SemanticErrorCode::VOID_VARIABLE,
                         "нельзя объявить переменную типа void");
             return;
+        } else if (node->getType() == "var") {
+            if (node->hasInitializer()) {
+                node->getInitializer()->accept(this);
+                varType = node->getInitializer()->getType();
+                if (!varType || isErrorType(varType)) {
+                    reportError(node->getLine(), node->getColumn(),
+                                SemanticErrorCode::TYPE_MISMATCH,
+                                "не удалось вывести тип переменной '" + varName + "'");
+                    return;
+                }
+            } else {
+                reportError(node->getLine(), node->getColumn(),
+                            SemanticErrorCode::TYPE_MISMATCH,
+                            "переменная 'var' должна быть инициализирована");
+                return;
+            }
         } else {
             SymbolInfo* structSymbol = symbolTable->lookup(node->getType());
             if (!structSymbol || !structSymbol->isStruct()) {
@@ -806,7 +822,7 @@ namespace semantic {
         SymbolInfo varSymbol = SymbolInfo::createVariable(varName, varType,
                                                           node->getLine(), node->getColumn());
 
-        if (node->hasInitializer()) {
+        if (node->hasInitializer() && node->getType() != "var") {
             node->getInitializer()->accept(this);
 
             Type* initType = node->getInitializer()->getType();
@@ -824,6 +840,8 @@ namespace semantic {
             } else {
                 varSymbol.isInitialized = false;
             }
+        } else if (node->hasInitializer() && node->getType() == "var") {
+            varSymbol.isInitialized = true;
         }
 
         symbolTable->insert(varName, varSymbol);
@@ -968,6 +986,22 @@ namespace semantic {
     void SemanticAnalyzer::visitExprStmtNode(ExprStmtNode* node) {
         if (node->getExpression()) {
             node->getExpression()->accept(this);
+        }
+    }
+
+    void SemanticAnalyzer::visitBreakStmtNode(BreakStmtNode* node) {
+        if (!inLoop) {
+            reportError(node->getLine(), node->getColumn(),
+                        SemanticErrorCode::BREAK_OUTSIDE_LOOP,
+                        "оператор break может использоваться только внутри цикла");
+        }
+    }
+
+    void SemanticAnalyzer::visitContinueStmtNode(ContinueStmtNode* node) {
+        if (!inLoop) {
+            reportError(node->getLine(), node->getColumn(),
+                        SemanticErrorCode::CONTINUE_OUTSIDE_LOOP,
+                        "оператор continue может использоваться только внутри цикла");
         }
     }
 

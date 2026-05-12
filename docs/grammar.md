@@ -10,7 +10,7 @@
 ```
 keyword:
   "if" | "else" | "while" | "for" | "int" | "float" | "bool" | "return"
-  | "true" | "false" | "void" | "struct" | "fn"
+  | "true" | "false" | "void" | "struct" | "fn" | "break" | "continue" | "var"
 
 Идентификаторы и литералы:
   identifier        : letter, { letter | digit | "_" }
@@ -104,6 +104,7 @@ FieldList ::= Field FieldList | ε
 Field ::= Type identifier ";"
 
 VarDecl ::= Type identifier VarInitializer ";"
+          | "var" identifier assign Expression ";"
 
 VarInitializer ::= assign Expression | ε
 ```
@@ -115,7 +116,7 @@ Type ::= "int" | "float" | "bool" | "void" | "struct" identifier | identifier
 
 ### Инструкции 
 ```
-Statement ::= BlockStmt | IfStmt | WhileStmt | ForStmt | ReturnStmt | ExprStmt | VarDecl | EmptyStmt
+Statement ::= BlockStmt | IfStmt | WhileStmt | ForStmt | ReturnStmt | ExprStmt | VarDecl | EmptyStmt | BreakStmt | ContinueStmt
 
 BlockStmt ::= "{" StatementList "}"
 
@@ -140,6 +141,10 @@ ReturnExpr ::= Expression | ε
 ExprStmt ::= Expression ";"
 
 EmptyStmt ::= ";"
+
+BreakStmt ::= "break" ";"
+
+ContinueStmt ::= "continue" ";"
 
 StatementList ::= Statement StatementList | ε
 ```
@@ -217,20 +222,22 @@ ArgumentRest ::= "," Expression ArgumentRest | ε
 
 ### Множества FIRST
 ```
-FIRST(Program) = { "fn", "struct", "int", "float", "bool", "void", identifier, ε }
-FIRST(Declaration) = { "fn", "struct", "int", "float", "bool", "void", identifier }
+FIRST(Program) = { "fn", "struct", "int", "float", "bool", "void", identifier, "var", ε }
+FIRST(Declaration) = { "fn", "struct", "int", "float", "bool", "void", identifier, "var" }
 FIRST(FunctionDecl) = { "fn" }
 FIRST(StructDecl) = { "struct" }
-FIRST(VarDecl) = { "int", "float", "bool", "void", identifier, "struct" }
-FIRST(Statement) = { "{", "if", "while", "for", "return", identifier, 
-                     integer_literal, float_literal, string_literal, boolean_literal, 
+FIRST(VarDecl) = { "int", "float", "bool", "void", identifier, "struct", "var" }
+FIRST(Statement) = { "{", "if", "while", "for", "return", "break", "continue",
+                     identifier, integer_literal, float_literal, string_literal, boolean_literal, 
                      "(", increment, decrement, operator_not, operator_sub, 
-                     "int", "float", "bool", "void", "struct", ";" }
+                     "int", "float", "bool", "void", "struct", "var", ";" }
 FIRST(BlockStmt) = { "{" }
 FIRST(IfStmt) = { "if" }
 FIRST(WhileStmt) = { "while" }
 FIRST(ForStmt) = { "for" }
 FIRST(ReturnStmt) = { "return" }
+FIRST(BreakStmt) = { "break" }
+FIRST(ContinueStmt) = { "continue" }
 FIRST(ExprStmt) = { identifier, integer_literal, float_literal, string_literal, 
                     boolean_literal, "(", increment, decrement, operator_not, operator_sub }
 FIRST(EmptyStmt) = { ";" }
@@ -241,13 +248,15 @@ FIRST(Expression) = { identifier, integer_literal, float_literal, string_literal
 ### Множества FOLLOW
 ```
 FOLLOW(Program) = { EOF }
-FOLLOW(Declaration) = { "fn", "struct", "int", "float", "bool", "void", identifier, EOF }
+FOLLOW(Declaration) = { "fn", "struct", "int", "float", "bool", "void", identifier, "var", EOF }
 FOLLOW(Statement) = { ";", "}", "else", EOF }
 FOLLOW(BlockStmt) = { ";", "}", "else", EOF }
 FOLLOW(IfStmt) = { ";", "}", "else", EOF }
 FOLLOW(WhileStmt) = { ";", "}", "else", EOF }
 FOLLOW(ForStmt) = { ";", "}", "else", EOF }
 FOLLOW(ReturnStmt) = { ";", "}", "else", EOF }
+FOLLOW(BreakStmt) = { ";", "}", "else", EOF }
+FOLLOW(ContinueStmt) = { ";", "}", "else", EOF }
 FOLLOW(ExprStmt) = { ";", "}", "else", EOF }
 FOLLOW(EmptyStmt) = { ";", "}", "else", EOF }
 FOLLOW(Expression) = { ";", ")", ",", "}", "]", ".",

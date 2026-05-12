@@ -4,17 +4,11 @@
 function test: int (x: int)
   entry:
       PARAM 0, x_1
-      t5 = 0
-      t6 = 0
-      t8 = 0
       t10 = ADD x_1, x_1
       t11 = ADD t10, x_1
       t12 = ADD t11, x_1
-      t13 = ADD t12, t5
-      t14 = ADD t13, t6
-      t15 = ADD t14, x_1
-      t16 = ADD t15, t8
-      t17 = ADD t16, x_1
+      t15 = ADD t12, x_1
+      t17 = ADD t15, x_1
       RETURN t17
 
 function main: int ()

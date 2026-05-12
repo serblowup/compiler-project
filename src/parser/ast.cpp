@@ -333,6 +333,18 @@ std::string VarDeclStmtNode::toString() const {
     return oss.str();
 }
 
+std::string BreakStmtNode::toString() const {
+    std::ostringstream oss;
+    oss << "BreakStmt [" << line << ":" << column << "]";
+    return oss.str();
+}
+
+std::string ContinueStmtNode::toString() const {
+    std::ostringstream oss;
+    oss << "ContinueStmt [" << line << ":" << column << "]";
+    return oss.str();
+}
+
 std::string ParamNode::toString() const {
     std::ostringstream oss;
     oss << "Param [" << line << ":" << column << "]: " << type << " " << name;

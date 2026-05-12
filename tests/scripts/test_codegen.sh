@@ -51,26 +51,26 @@ for test_file in "$TEST_DIR"/*.src; do
     if [ ! -f "$test_file" ]; then
         continue
     fi
-    
+
     TOTAL=$((TOTAL + 1))
-    
+
     filename=$(basename "$test_file")
     basename="${filename%.*}"
-    
+
     expected_file="$EXPECTED_DIR/$basename.txt"
     asm_file="test_output/codegen/${basename}.asm"
     obj_file="test_output/codegen/${basename}.o"
     exe_file="test_output/codegen/${basename}"
-    
+
     if [ ! -f "$expected_file" ]; then
         echo "  [${CATEGORY}] ${filename}: ОШИБКА - отсутствует ожидаемый файл $expected_file"
         FAILED=$((FAILED + 1))
         continue
     fi
-    
+
     # Генерируем ассемблер
     ./compiler compile --input "$test_file" --output "$asm_file" 2>/dev/null
-    
+
     if [ ! -f "$asm_file" ]; then
         if [[ "$CATEGORY" == *"INVALID"* ]]; then
             echo "  [${CATEGORY}] ${filename}: УСПЕШНО (ошибка обнаружена)"
@@ -81,14 +81,14 @@ for test_file in "$TEST_DIR"/*.src; do
         fi
         continue
     fi
-    
+
     # Проверяем, ожидается ли ошибка
     if [[ "$CATEGORY" == *"INVALID"* ]]; then
         echo "  [${CATEGORY}] ${filename}: НЕУДАЧА - ожидалась ошибка, но файл создан"
         FAILED=$((FAILED + 1))
         continue
     fi
-    
+
     # Ассемблируем
     nasm -f elf64 "$asm_file" -o "$obj_file" 2>/dev/null
     if [ $? -ne 0 ]; then
@@ -96,7 +96,7 @@ for test_file in "$TEST_DIR"/*.src; do
         FAILED=$((FAILED + 1))
         continue
     fi
-    
+
     # Линкуем
     ld -o "$exe_file" "$RUNTIME_OBJ" "$obj_file" 2>/dev/null
     if [ $? -ne 0 ]; then
@@ -104,14 +104,22 @@ for test_file in "$TEST_DIR"/*.src; do
         FAILED=$((FAILED + 1))
         continue
     fi
-    
+
     # Запускаем и проверяем результат
     "$exe_file" 2>/dev/null
     exit_code=$?
-    
+
     # Извлекаем ожидаемый код возврата из файла
     expected_exit=$(grep -oP 'EXIT_CODE=\K[0-9]+' "$expected_file" || echo "0")
-    
+
+    # Если нет EXIT_CODE, используем содержимое файла как число
+    if [ -z "$expected_exit" ] || [ "$expected_exit" = "0" ]; then
+        expected_exit=$(cat "$expected_file" 2>/dev/null | tr -d ' \n\r' || echo "0")
+        if [ -z "$expected_exit" ]; then
+            expected_exit=0
+        fi
+    fi
+
     if [ "$exit_code" -eq "$expected_exit" ]; then
         echo "  [${CATEGORY}] ${filename}: УСПЕШНО (exit: $exit_code)"
         PASSED=$((PASSED + 1))

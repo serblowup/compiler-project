@@ -1,0 +1,13 @@
+fn sum6(int a, int b, int c, int d, int e, int f) -> int {
+    return a + b + c + d + e + f;
+}
+
+fn sum4(int a, int b, int c, int d) -> int {
+    return a + b + c + d;
+}
+
+fn main() -> int {
+    int r1 = sum6(1, 2, 3, 4, 5, 6);
+    int r2 = sum4(7, 8, 9, 10);
+    return r1 + r2;
+}

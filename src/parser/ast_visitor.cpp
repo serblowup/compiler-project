@@ -45,6 +45,14 @@ void ExprStmtNode::accept(ASTVisitor* visitor) {
     visitor->visitExprStmtNode(this);
 }
 
+void BreakStmtNode::accept(ASTVisitor* visitor) {
+    visitor->visitBreakStmtNode(this);
+}
+
+void ContinueStmtNode::accept(ASTVisitor* visitor) {
+    visitor->visitContinueStmtNode(this);
+}
+
 void BinaryExprNode::accept(ASTVisitor* visitor) {
     visitor->visitBinaryExprNode(this);
 }

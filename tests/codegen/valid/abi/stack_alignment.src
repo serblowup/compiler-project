@@ -1,0 +1,18 @@
+fn check_alignment(int n) -> int {
+    int a = 1;
+    int b = 2;
+    int c = 3;
+    int d = 4;
+    int e = 5;
+    int f = 6;
+    a = a + b;
+    c = c + d;
+    e = e + f;
+    return a + c + e + n;
+}
+
+fn main() -> int {
+    int x = check_alignment(10);
+    int y = check_alignment(20);
+    return x + y;
+}
