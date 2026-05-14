@@ -1,0 +1,13 @@
+fn test_nested() -> int {
+    int a = 0;
+    int b = 5;
+    int c = 10;
+    if (a != 0 && b > 0 && c / b > 1) {
+        return 100;
+    }
+    return 0;
+}
+
+fn main() -> int {
+    return test_nested();
+}

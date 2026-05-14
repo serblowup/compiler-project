@@ -35,7 +35,8 @@ std::string IROptimizer::OptimizationReport::toString() const {
     oss << "  - распространение констант: " << const_propagation << "\n";
     oss << "  - распространение копий:    " << copy_propagation << "\n";
     oss << "  - удаление избыточных Phi:  " << redundant_phis << "\n";
-    oss << "  - удаление недостижимого:   " << unreachable_code << "\n\n";
+    oss << "  - удаление недостижимого:   " << unreachable_code << "\n";
+    oss << "CSE (общие подвыражения):     " << cse_eliminations << "\n\n";
     
     oss << "Метрики:\n";
     oss << "  Удалено инструкций:         " << total_instructions_removed << "\n";
@@ -93,6 +94,7 @@ void IROptimizer::optimizeSSA(IRProgram* program) {
             if (eliminateRedundantPhis(func.get())) changed = true;
             if (removeUnreachableBlocks(func.get())) changed = true;
             if (eliminateRedundantMoves(func.get())) changed = true;
+            if (eliminateCommonSubexpressions(func.get())) changed = true;
         }
         
         iteration++;
@@ -171,6 +173,9 @@ void IROptimizer::optimizeFunction(IRFunction* func) {
             changed = true;
         }
         if (removeUnreachableBlocks(func)) {
+            changed = true;
+        }
+        if (eliminateCommonSubexpressions(func)) {
             changed = true;
         }
     }
@@ -878,6 +883,53 @@ bool IROptimizer::removeUnreachableBlocks(IRFunction* func) {
             report.total_instructions_removed++;
         } else {
             ++it;
+        }
+    }
+    
+    return changed;
+}
+
+// CSE
+bool IROptimizer::eliminateCommonSubexpressions(IRFunction* func) {
+    bool changed = false;
+    
+    for (const auto& block : func->getBlocks()) {
+        std::unordered_map<std::string, std::string> expr_to_temp;
+        auto& instrs = block->getInstructionsMutable();
+        
+        for (size_t i = 0; i < instrs.size(); ++i) {
+            Instruction* instr = instrs[i].get();
+            
+            // Только для арифметических операций с int
+            if (instr->kind == InstrKind::ADD || instr->kind == InstrKind::SUB ||
+                instr->kind == InstrKind::MUL || instr->kind == InstrKind::DIV ||
+                instr->kind == InstrKind::MOD) {
+                
+                // Проверяем, что оба операнда не константы
+                std::string expr_key = std::to_string(static_cast<int>(instr->kind)) + 
+                                       "|" + instr->src1.toString() + 
+                                       "|" + instr->src2.toString();
+                
+                auto it = expr_to_temp.find(expr_key);
+                if (it != expr_to_temp.end()) {
+                    // Нашли повторяющееся выражение
+                    std::string existing_temp = it->second;
+                    std::string dest_name = instr->dest.name;
+                    
+                    // Заменяем использование
+                    replaceAllUses(dest_name, existing_temp, block.get(), i);
+                    
+                    // Удаляем инструкцию
+                    instrs.erase(instrs.begin() + i);
+                    report.cse_eliminations++;
+                    report.total_instructions_removed++;
+                    changed = true;
+                    i--;
+                } else if (instr->src1.kind == OperandKind::TEMP && 
+                           instr->src2.kind == OperandKind::TEMP) {
+                    expr_to_temp[expr_key] = instr->dest.name;
+                }
+            }
         }
     }
     

@@ -10,6 +10,9 @@
 #include "stack_frame.hpp"
 #include "abi.hpp"
 #include "register_allocator.hpp"
+#include "label_manager.hpp"
+#include "control_flow_generator.hpp"
+#include "expression_generator.hpp"
 
 namespace codegen {
 
@@ -37,6 +40,10 @@ private:
     
     std::string last_call_dest;
     
+    LabelManager label_manager;
+    std::unique_ptr<ControlFlowGenerator> cf_gen;
+    std::unique_ptr<ExpressionGenerator> expr_gen;
+    
     void emit(const std::string& asm_code);
     void emitLabel(const std::string& label);
     void emitComment(const std::string& comment);
@@ -55,7 +62,9 @@ private:
     void generateEpilogue(const ir::IRFunction* func);
     void generateInstruction(const ir::Instruction* instr);
     void generateArithmetic(const ir::Instruction* instr);
+    void generateFloatArithmetic(const ir::Instruction* instr);
     void generateComparison(const ir::Instruction* instr);
+    void generateFloatComparison(const ir::Instruction* instr);
     void generateLogic(const ir::Instruction* instr);
     void generateMemory(const ir::Instruction* instr);
     void generateControlFlow(const ir::Instruction* instr);
@@ -63,6 +72,7 @@ private:
     void generateReturn(const ir::Instruction* instr);
     void generatePhi(const ir::Instruction* instr);
     void generateMove(const ir::Instruction* instr);
+    void generateTypeConversion(const ir::Instruction* instr);
     
     void generateGlobalVariable(const std::string& name, const ir::Operand& value);
     void generateStringLiteral(const std::string& label, const std::string& value);

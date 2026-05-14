@@ -1,0 +1,16 @@
+fn test_not() -> int {
+    bool t = true;
+    bool f = false;
+    int result = 0;
+    if (!t) {
+        result = result + 1;
+    }
+    if (!f) {
+        result = result + 2;
+    }
+    return result;
+}
+
+fn main() -> int {
+    return test_not();
+}

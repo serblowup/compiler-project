@@ -353,7 +353,8 @@ int run_ir_generator(const std::string& input_file, const std::string& output_fi
             std::cout << "[IR] Семантический анализ завершен\n";
         }
 
-        ir::IRGenerator generator(analyzer.getSymbolTable());
+        codegen::LabelManager label_manager;
+        ir::IRGenerator generator(analyzer.getSymbolTable(), &label_manager);
         ir::IRProgram* program = generator.generate(ast.get());
 
         if (optimize) {
@@ -472,7 +473,8 @@ int run_codegen(const std::string& input_file, const std::string& output_file,
             std::cout << "[Codegen] Семантический анализ завершен\n";
         }
 
-        ir::IRGenerator ir_gen(analyzer.getSymbolTable());
+        codegen::LabelManager label_manager;
+        ir::IRGenerator ir_gen(analyzer.getSymbolTable(), &label_manager);
         ir::IRProgram* ir_program = ir_gen.generate(ast.get());
 
         if (verbose) {

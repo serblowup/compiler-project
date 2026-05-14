@@ -3,19 +3,26 @@
 
 namespace ir {
 
-IRGenerator::IRGenerator(semantic::SymbolTable* sym_table)
+IRGenerator::IRGenerator(semantic::SymbolTable* sym_table, codegen::LabelManager* lm)
     : program(nullptr)
     , current_function(nullptr)
     , current_block(nullptr)
     , symbol_table(sym_table)
     , temp_counter(0)
-    , label_counter(0) {}
+    , label_counter(0)
+    , label_manager(lm) {}
 
 std::string IRGenerator::newTemp() {
+    if (label_manager) {
+        return label_manager->newTemp();
+    }
     return "t" + std::to_string(++temp_counter);
 }
 
 std::string IRGenerator::newLabel() {
+    if (label_manager) {
+        return label_manager->newLabel();
+    }
     return "L" + std::to_string(++label_counter);
 }
 

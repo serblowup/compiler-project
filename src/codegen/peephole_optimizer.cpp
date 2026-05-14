@@ -26,6 +26,8 @@ std::string PeepholeOptimizer::OptimizationStats::toString() const {
     oss << "  xor zero replacements:    " << xor_zero_replacements << "\n";
     oss << "  test before jump removed: " << test_removed << "\n";
     oss << "  self moves removed:       " << self_moves_removed << "\n";
+    oss << "  mul→shl replacements:     " << mul_to_shift_replacements << "\n";
+    oss << "  useless jumps removed:    " << useless_jumps_removed << "\n";
     oss << "  Total instructions removed: " << total_removed << "\n";
     return oss.str();
 }
@@ -574,6 +576,81 @@ bool PeepholeOptimizer::applySwapMoveElimination(std::vector<AsmLine>& lines) {
     return changed;
 }
 
+bool PeepholeOptimizer::applyShiftReplacement(std::vector<AsmLine>& lines) {
+    bool changed = false;
+    
+    for (auto& line : lines) {
+        if (!line.is_label && !line.is_directive) {
+            if (line.instruction == "imul" && !line.operands.empty()) {
+                size_t comma = line.operands.find(',');
+                if (comma != std::string::npos) {
+                    std::string dest = line.operands.substr(0, comma);
+                    std::string src = line.operands.substr(comma + 1);
+                    
+                    dest.erase(0, dest.find_first_not_of(" \t"));
+                    dest.erase(dest.find_last_not_of(" \t") + 1);
+                    src.erase(0, src.find_first_not_of(" \t"));
+                    src.erase(src.find_last_not_of(" \t") + 1);
+                    
+                    if (src.find_first_not_of("0123456789") == std::string::npos) {
+                        int value = std::stoi(src);
+                        if ((value & (value - 1)) == 0 && value > 0) {
+                            int shift = 0;
+                            while (value > 1) {
+                                value >>= 1;
+                                shift++;
+                            }
+                            line.instruction = "shl";
+                            line.operands = dest + ", " + std::to_string(shift);
+                            stats.mul_to_shift_replacements++;
+                            stats.total_removed++;
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return changed;
+}
+
+bool PeepholeOptimizer::applyUselessJumpRemoval(std::vector<AsmLine>& lines) {
+    bool changed = false;
+    std::vector<AsmLine> result;
+    
+    for (size_t i = 0; i < lines.size(); ++i) {
+        if (i + 1 < lines.size()) {
+            AsmLine& curr = lines[i];
+            AsmLine& next = lines[i + 1];
+            
+            if (curr.instruction == "jmp" && next.is_label) {
+                std::string target = curr.operands;
+                target.erase(0, target.find_first_not_of(" \t"));
+                target.erase(target.find_last_not_of(" \t") + 1);
+                
+                std::string label = next.label;
+                if (!label.empty() && label.back() == ':') {
+                    label.pop_back();
+                }
+                
+                if (target == label) {
+                    stats.useless_jumps_removed++;
+                    stats.total_removed++;
+                    changed = true;
+                    continue;
+                }
+            }
+        }
+        result.push_back(lines[i]);
+    }
+    
+    if (changed) {
+        lines = std::move(result);
+    }
+    return changed;
+}
+
 std::string PeepholeOptimizer::optimize(const std::string& asm_code) {
     resetStats();
     
@@ -602,6 +679,8 @@ std::string PeepholeOptimizer::optimize(const std::string& asm_code) {
         if (applyIncDecReplacement(lines)) changed = true;
         if (applyXorZeroReplacement(lines)) changed = true;
         if (applyTestBeforeJumpElimination(lines)) changed = true;
+        if (applyShiftReplacement(lines)) changed = true;
+        if (applyUselessJumpRemoval(lines)) changed = true;
         
         iteration++;
     }

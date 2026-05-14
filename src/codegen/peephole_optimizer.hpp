@@ -17,6 +17,8 @@ public:
         int xor_zero_replacements = 0;
         int test_removed = 0;
         int self_moves_removed = 0;
+        int mul_to_shift_replacements = 0;
+        int useless_jumps_removed = 0;
         int total_removed = 0;
         
         std::string toString() const;
@@ -55,6 +57,8 @@ private:
     bool applyTestBeforeJumpElimination(std::vector<AsmLine>& lines);
     bool applySelfMoveElimination(std::vector<AsmLine>& lines);
     bool applySwapMoveElimination(std::vector<AsmLine>& lines);
+    bool applyShiftReplacement(std::vector<AsmLine>& lines);
+    bool applyUselessJumpRemoval(std::vector<AsmLine>& lines);
     
     std::string rebuildCode(const std::vector<AsmLine>& lines);
 };

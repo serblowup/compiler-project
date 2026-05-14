@@ -10,7 +10,7 @@
 - C++17 (разработка на gcc 15.2.1)
 - Make (разработка на GNU Make 4.4.1)
 - NASM (разработка на NASM 3.01)
-- ld (GNU Binutils 2.46)
+- ld (разработка на GNU Binutils 2.46)
 - lcov (разработка на LCOV version 2.4-0)
 - graphviz (разработка на graphviz version 14.1.2)
 
@@ -162,7 +162,7 @@ echo $?  # Код возврата
 3. **Парсер** — построение AST (Abstract Syntax Tree)
 4. **Семантический анализ** — проверка типов, построение таблицы символов
 5. **IR-генератор** — трансляция AST в промежуточное представление (SSA-форма) с оптимизациями: пропуск избыточной инициализации `i = 0` в циклах `for`, прямая подстановка выражения в `RETURN`
-6. **Оптимизатор IR** — свёртка констант, алгебраические упрощения, удаление мёртвого кода
+6. **Оптимизатор IR** — свёртка констант, алгебраические упрощения, удаление мёртвого кода, CSE (Common Subexpression Elimination)
 7. **Генератор кода** — трансляция IR в x86-64 ассемблер с распределением регистров (Linear Scan) и оконной оптимизацией (Peephole)
 
 ## System V AMD64 ABI
@@ -339,6 +339,113 @@ main:
     ret
 ```
 
+### Условные операторы (if/else)
+
+**Исходный код:**
+```c
+fn max(int a, int b) -> int {
+    if (a > b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+```
+
+**Сгенерированный ассемблер:**
+```asm
+    mov eax, [rbp-8]   ; загрузка a
+    cmp eax, [rbp-12]  ; сравнение с b
+    jle .Lelse         ; переход на else если a <= b
+    mov eax, [rbp-8]   ; then: return a
+    jmp .Lendif
+.Lelse:
+    mov eax, [rbp-12]  ; else: return b
+.Lendif:
+    ret
+```
+
+### Циклы (while/for)
+
+**Исходный код (while):**
+```c
+int i = 0;
+while (i < 10) {
+    sum = sum + i;
+    i = i + 1;
+}
+```
+
+**Сгенерированный ассемблер:**
+```asm
+.Lwhile_cond:
+    cmp dword [rbp-4], 10
+    jge .Lwhile_end
+    mov eax, [rbp-8]
+    add eax, [rbp-4]
+    mov [rbp-8], eax
+    inc dword [rbp-4]
+    jmp .Lwhile_cond
+.Lwhile_end:
+```
+
+### Логические операторы с короткой схемой (short-circuit)
+
+**Исходный код:**
+```c
+if (a != 0 && b / a > 2) {
+    result = 100;
+}
+```
+
+**Особенность:** `b / a` не вычисляется, если `a == 0` (защита от деления на ноль).
+
+**Сгенерированный ассемблер:**
+```asm
+    mov eax, [rbp-4]   ; загрузка a
+    cmp eax, 0
+    je .Lfalse         ; если a == 0, переход к false
+    mov eax, [rbp-8]   ; загрузка b
+    cdq
+    idiv dword [rbp-4] ; b / a (вычисляется только если a != 0)
+    cmp eax, 2
+    jg .Ltrue          ; если b/a > 2, переход к true
+.Lfalse:
+    jmp .Lend
+.Ltrue:
+    mov dword [rbp-12], 100
+.Lend:
+```
+
+### Операторы break и continue
+
+**Исходный код:**
+```c
+while (1) {
+    i = i + 1;
+    if (i > 10) break;
+    if (i % 2 == 0) continue;
+    sum = sum + i;
+}
+```
+
+**Сгенерированный ассемблер:**
+```asm
+.Lloop:
+    inc dword [rbp-4]       ; i++
+    cmp dword [rbp-4], 10
+    jg .Lbreak              ; break при i > 10
+    mov eax, [rbp-4]
+    and eax, 1
+    jz .Lcontinue           ; continue при чётном i
+    mov eax, [rbp-8]
+    add eax, [rbp-4]
+    mov [rbp-8], eax
+.Lcontinue:
+    jmp .Lloop
+.Lbreak:
+```
+
 **Пример с режимами оптимизации:**
 ```bash
 # Полная оптимизация (LSRA + Peephole) — по умолчанию
@@ -399,15 +506,23 @@ compiler-project/
 │   ├── language_spec.md
 │   └── semantic.md
 ├── examples # Примеры исходного кода
+│   ├── basic_constructs.src
 │   ├── factorial.src
 │   ├── fibonacci.src
 │   └── hello.src
 ├── Makefile # Makefile
 ├── README.md # Readme
+├── short_circuit_demo.src
 ├── src
 │   ├── codegen # Генерация x86-64 ассемблера
 │   │   ├── abi.cpp
 │   │   ├── abi.hpp
+│   │   ├── control_flow_generator.cpp
+│   │   ├── control_flow_generator.hpp
+│   │   ├── expression_generator.cpp
+│   │   ├── expression_generator.hpp
+│   │   ├── label_manager.cpp
+│   │   ├── label_manager.hpp
 │   │   ├── peephole_optimizer.cpp
 │   │   ├── peephole_optimizer.hpp
 │   │   ├── register_allocator.cpp
@@ -466,6 +581,11 @@ compiler-project/
     │   │   └── expected
     │   │       └── undeclared_func.txt
     │   └── valid
+    │       ├── abi
+    │       │   ├── callee_saved_regs.src
+    │       │   ├── param_passing.src
+    │       │   ├── return_value.src
+    │       │   └── stack_alignment.src
     │       ├── arithmetic_ops
     │       │   ├── complex_expression.src
     │       │   ├── divide.src
@@ -475,22 +595,38 @@ compiler-project/
     │       │   └── subtract.src
     │       ├── control_flow
     │       │   ├── for_loop.src
+    │       │   ├── logical_complex.src
+    │       │   ├── logical_not.src
+    │       │   ├── short_circuit_and.src
+    │       │   ├── short_circuit_nested.src
+    │       │   ├── short_circuit_or.src
+    │       │   ├── short_circuit_side_effect.src
     │       │   ├── simple_if.src
     │       │   └── while_loop.src
     │       ├── expected
+    │       │   ├── callee_saved_regs.txt
     │       │   ├── complex_expression.txt
     │       │   ├── conditional.txt
     │       │   ├── divide.txt
     │       │   ├── factorial.txt
     │       │   ├── fibonacci.txt
     │       │   ├── for_loop.txt
+    │       │   ├── logical_complex.txt
+    │       │   ├── logical_not.txt
     │       │   ├── modulo.txt
     │       │   ├── multiple_params.txt
     │       │   ├── multiply.txt
     │       │   ├── nested_call.txt
+    │       │   ├── param_passing.txt
+    │       │   ├── return_value.txt
+    │       │   ├── short_circuit_and.txt
+    │       │   ├── short_circuit_nested.txt
+    │       │   ├── short_circuit_or.txt
+    │       │   ├── short_circuit_side_effect.txt
     │       │   ├── simple_add.txt
     │       │   ├── simple_call.txt
     │       │   ├── simple_if.txt
+    │       │   ├── stack_alignment.txt
     │       │   ├── subtract.txt
     │       │   └── while_loop.txt
     │       ├── function_calls

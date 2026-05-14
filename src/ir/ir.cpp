@@ -69,6 +69,19 @@ const char* instrKindToString(InstrKind kind) {
         case InstrKind::CMP_LE: return "CMP_LE";
         case InstrKind::CMP_GT: return "CMP_GT";
         case InstrKind::CMP_GE: return "CMP_GE";
+        case InstrKind::FADD: return "FADD";
+        case InstrKind::FSUB: return "FSUB";
+        case InstrKind::FMUL: return "FMUL";
+        case InstrKind::FDIV: return "FDIV";
+        case InstrKind::FNEG: return "FNEG";
+        case InstrKind::SITOFP: return "SITOFP";
+        case InstrKind::FPTOGI: return "FPTOGI";
+        case InstrKind::CMP_F_EQ: return "CMP_F_EQ";
+        case InstrKind::CMP_F_NE: return "CMP_F_NE";
+        case InstrKind::CMP_F_LT: return "CMP_F_LT";
+        case InstrKind::CMP_F_LE: return "CMP_F_LE";
+        case InstrKind::CMP_F_GT: return "CMP_F_GT";
+        case InstrKind::CMP_F_GE: return "CMP_F_GE";
         case InstrKind::LOAD: return "LOAD";
         case InstrKind::STORE: return "STORE";
         case InstrKind::ALLOCA: return "ALLOCA";
@@ -101,31 +114,26 @@ const char* operandKindToString(OperandKind kind) {
 std::string Instruction::toString() const {
     std::ostringstream oss;
     
-    // Метка
     if (kind == InstrKind::LABEL) {
         oss << dest.toString() << ":";
         return oss.str();
     }
     
-    // Безусловный переход
     if (kind == InstrKind::JUMP) {
         oss << "JUMP " << target_label;
         return oss.str();
     }
     
-    // Условный переход (если true)
     if (kind == InstrKind::JUMP_IF) {
         oss << "JUMP_IF " << src1.toString() << ", " << target_label;
         return oss.str();
     }
     
-    // Условный переход (если false)
     if (kind == InstrKind::JUMP_IF_NOT) {
         oss << "JUMP_IF_NOT " << src1.toString() << ", " << target_label;
         return oss.str();
     }
     
-    // Return
     if (kind == InstrKind::RETURN) {
         if (src1.kind == OperandKind::TEMP || src1.kind == OperandKind::VARIABLE) {
             oss << "RETURN " << src1.toString();
@@ -135,25 +143,21 @@ std::string Instruction::toString() const {
         return oss.str();
     }
     
-    // Store
     if (kind == InstrKind::STORE) {
         oss << "STORE " << src1.toString() << ", " << dest.toString();
         return oss.str();
     }
     
-    // Load
     if (kind == InstrKind::LOAD) {
         oss << "LOAD " << dest.toString() << ", " << src1.toString();
         return oss.str();
     }
     
-    // Alloca
     if (kind == InstrKind::ALLOCA) {
         oss << dest.toString() << " = ALLOCA " << src1.toString();
         return oss.str();
     }
     
-    // Call
     if (kind == InstrKind::CALL) {
         oss << dest.toString() << " = CALL " << src1.toString();
         for (const auto& arg : args) {
@@ -162,7 +166,6 @@ std::string Instruction::toString() const {
         return oss.str();
     }
     
-    // PHI
     if (kind == InstrKind::PHI) {
         oss << dest.toString() << " = PHI";
         for (size_t i = 0; i < args.size(); i += 2) {
@@ -172,20 +175,17 @@ std::string Instruction::toString() const {
         return oss.str();
     }
     
-    // PARAM
     if (kind == InstrKind::PARAM) {
         oss << "PARAM " << src1.toString() << ", " << src2.toString();
         return oss.str();
     }
     
-    // Унарные операции
-    if (kind == InstrKind::NEG || kind == InstrKind::NOT) {
+    if (kind == InstrKind::NEG || kind == InstrKind::NOT || kind == InstrKind::FNEG) {
         oss << dest.toString() << " = " << instrKindToString(kind)
             << " " << src1.toString();
         return oss.str();
     }
     
-    // Бинарные операции
     if (kind == InstrKind::MOVE) {
         oss << dest.toString() << " = " << src1.toString();
     } else {
@@ -193,7 +193,6 @@ std::string Instruction::toString() const {
             << " " << src1.toString() << ", " << src2.toString();
     }
     
-    // Комментарий с типом
     if (type && !type->isError()) {
         oss << "  # " << type->toString();
     }
@@ -317,7 +316,6 @@ const std::vector<std::unique_ptr<BasicBlock>>& IRFunction::getBlocks() const {
     return blocks;
 }
 
-// Реализация метода для получения не-const доступа к блокам
 std::vector<std::unique_ptr<BasicBlock>>& IRFunction::getBlocksMutable() {
     return blocks;
 }

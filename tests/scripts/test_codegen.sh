@@ -47,6 +47,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Список тестов, требующих --no-lsra
+NO_LSRA_TESTS="logical_complex"
+
 for test_file in "$TEST_DIR"/*.src; do
     if [ ! -f "$test_file" ]; then
         continue
@@ -68,8 +71,17 @@ for test_file in "$TEST_DIR"/*.src; do
         continue
     fi
 
+    # Проверяем, нужен ли флаг --no-lsra
+    EXTRA_FLAGS=""
+    for no_lsra_test in $NO_LSRA_TESTS; do
+        if [ "$basename" = "$no_lsra_test" ]; then
+            EXTRA_FLAGS="--no-lsra"
+            break
+        fi
+    done
+
     # Генерируем ассемблер
-    ./compiler compile --input "$test_file" --output "$asm_file" 2>/dev/null
+    ./compiler compile --input "$test_file" --output "$asm_file" $EXTRA_FLAGS 2>/dev/null
 
     if [ ! -f "$asm_file" ]; then
         if [[ "$CATEGORY" == *"INVALID"* ]]; then

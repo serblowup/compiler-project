@@ -18,6 +18,8 @@ X86Generator::X86Generator()
     , use_peephole_optimization(true)
     , is_leaf_function(false)
     , last_call_dest("")
+    , cf_gen(std::make_unique<ControlFlowGenerator>(label_manager))
+    , expr_gen(std::make_unique<ExpressionGenerator>(label_manager))
 {
 }
 
@@ -317,6 +319,19 @@ void X86Generator::generateInstruction(const ir::Instruction* instr) {
             generateArithmetic(instr);
             break;
             
+        case ir::InstrKind::FADD:
+        case ir::InstrKind::FSUB:
+        case ir::InstrKind::FMUL:
+        case ir::InstrKind::FDIV:
+        case ir::InstrKind::FNEG:
+            generateFloatArithmetic(instr);
+            break;
+            
+        case ir::InstrKind::SITOFP:
+        case ir::InstrKind::FPTOGI:
+            generateTypeConversion(instr);
+            break;
+            
         case ir::InstrKind::CMP_EQ:
         case ir::InstrKind::CMP_NE:
         case ir::InstrKind::CMP_LT:
@@ -324,6 +339,15 @@ void X86Generator::generateInstruction(const ir::Instruction* instr) {
         case ir::InstrKind::CMP_GT:
         case ir::InstrKind::CMP_GE:
             generateComparison(instr);
+            break;
+            
+        case ir::InstrKind::CMP_F_EQ:
+        case ir::InstrKind::CMP_F_NE:
+        case ir::InstrKind::CMP_F_LT:
+        case ir::InstrKind::CMP_F_LE:
+        case ir::InstrKind::CMP_F_GT:
+        case ir::InstrKind::CMP_F_GE:
+            generateFloatComparison(instr);
             break;
             
         case ir::InstrKind::AND:
@@ -378,7 +402,13 @@ void X86Generator::generateArithmetic(const ir::Instruction* instr) {
     if (instr->kind == ir::InstrKind::DIV || instr->kind == ir::InstrKind::MOD) {
         loadToReg("eax", instr->src1);
         emit("cdq");
-        emit("idiv " + src2_op);
+        
+        if (instr->src2.kind == ir::OperandKind::CONST_INT) {
+            emit("mov ecx, " + src2_op);
+            emit("idiv ecx");
+        } else {
+            emit("idiv " + src2_op);
+        }
         
         if (instr->kind == ir::InstrKind::DIV) {
             storeFromReg("eax", instr->dest);
@@ -423,6 +453,31 @@ void X86Generator::generateArithmetic(const ir::Instruction* instr) {
     }
 }
 
+void X86Generator::generateFloatArithmetic(const ir::Instruction* instr) {
+    loadToReg("eax", instr->src1);
+    emit("movd xmm0, eax");
+    
+    if (instr->kind == ir::InstrKind::FNEG) {
+        emit("pcmpeqd xmm1, xmm1");
+        emit("pslld xmm1, 31");
+        emit("xorps xmm0, xmm1");
+    } else {
+        loadToReg("eax", instr->src2);
+        emit("movd xmm1, eax");
+        
+        switch (instr->kind) {
+            case ir::InstrKind::FADD: emit("addss xmm0, xmm1"); break;
+            case ir::InstrKind::FSUB: emit("subss xmm0, xmm1"); break;
+            case ir::InstrKind::FMUL: emit("mulss xmm0, xmm1"); break;
+            case ir::InstrKind::FDIV: emit("divss xmm0, xmm1"); break;
+            default: break;
+        }
+    }
+    
+    emit("movd eax, xmm0");
+    storeFromReg("eax", instr->dest);
+}
+
 void X86Generator::generateComparison(const ir::Instruction* instr) {
     loadToReg("eax", instr->src1);
     emit("cmp eax, " + getOperand(instr->src2));
@@ -441,6 +496,41 @@ void X86Generator::generateComparison(const ir::Instruction* instr) {
     storeFromReg("eax", instr->dest);
 }
 
+void X86Generator::generateFloatComparison(const ir::Instruction* instr) {
+    loadToReg("eax", instr->src1);
+    emit("movd xmm0, eax");
+    loadToReg("eax", instr->src2);
+    emit("movd xmm1, eax");
+    emit("ucomiss xmm0, xmm1");
+    
+    switch (instr->kind) {
+        case ir::InstrKind::CMP_F_EQ: emit("sete al");  emit("setnp cl"); emit("and al, cl"); break;
+        case ir::InstrKind::CMP_F_NE: emit("setne al"); emit("setp cl");  emit("or al, cl");  break;
+        case ir::InstrKind::CMP_F_LT: emit("setb al");  break;
+        case ir::InstrKind::CMP_F_LE: emit("setbe al"); break;
+        case ir::InstrKind::CMP_F_GT: emit("seta al");  break;
+        case ir::InstrKind::CMP_F_GE: emit("setae al"); break;
+        default: break;
+    }
+    
+    emit("movzx eax, al");
+    storeFromReg("eax", instr->dest);
+}
+
+void X86Generator::generateTypeConversion(const ir::Instruction* instr) {
+    if (instr->kind == ir::InstrKind::SITOFP) {
+        loadToReg("eax", instr->src1);
+        emit("cvtsi2ss xmm0, eax");
+        emit("movd eax, xmm0");
+        storeFromReg("eax", instr->dest);
+    } else if (instr->kind == ir::InstrKind::FPTOGI) {
+        loadToReg("eax", instr->src1);
+        emit("movd xmm0, eax");
+        emit("cvttss2si eax, xmm0");
+        storeFromReg("eax", instr->dest);
+    }
+}
+
 void X86Generator::generateLogic(const ir::Instruction* instr) {
     std::string dest_op = getOperand(instr->dest);
     bool dest_is_mem = (dest_op.find("[rbp") != std::string::npos || 
@@ -457,7 +547,7 @@ void X86Generator::generateLogic(const ir::Instruction* instr) {
             emit("or "  + work_reg + ", " + getOperand(instr->src2)); 
             break;
         case ir::InstrKind::NOT: 
-            emit("not " + work_reg); 
+            emit("xor " + work_reg + ", 1"); 
             break;
         default: 
             break;
@@ -488,37 +578,35 @@ void X86Generator::generateMemory(const ir::Instruction* instr) {
 void X86Generator::generateControlFlow(const ir::Instruction* instr) {
     switch (instr->kind) {
         case ir::InstrKind::JUMP:
-            emit("jmp " + instr->target_label);
+            emit(cf_gen->jump(instr->target_label));
             current_block_ended = true;
             break;
             
         case ir::InstrKind::JUMP_IF: {
             std::string src_op = getOperand(instr->src1);
             if (src_op.find('[') == std::string::npos) {
-                emit("test " + src_op + ", " + src_op);
+                emit(cf_gen->jumpIf(src_op, instr->target_label));
             } else {
                 loadToReg("eax", instr->src1);
-                emit("test eax, eax");
+                emit(cf_gen->jumpIf("eax", instr->target_label));
             }
-            emit("jnz " + instr->target_label);
             break;
         }
             
         case ir::InstrKind::JUMP_IF_NOT: {
             std::string src_op = getOperand(instr->src1);
             if (src_op.find('[') == std::string::npos) {
-                emit("test " + src_op + ", " + src_op);
+                emit(cf_gen->jumpIfNot(src_op, instr->target_label));
             } else {
                 loadToReg("eax", instr->src1);
-                emit("test eax, eax");
+                emit(cf_gen->jumpIfNot("eax", instr->target_label));
             }
-            emit("jz " + instr->target_label);
             break;
         }
             
         case ir::InstrKind::LABEL:
             if (instr->dest.name != "entry") {
-                emitLabel(instr->dest.name);
+                emit(cf_gen->label(instr->dest.name));
             }
             current_block_ended = false;
             break;

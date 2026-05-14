@@ -1,0 +1,128 @@
+fn factorial(int n) -> int {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+fn sum_of_squares(int n) -> int {
+    int sum = 0;
+    int i = 1;
+    while (i <= n) {
+        sum = sum + i * i;
+        i = i + 1;
+    }
+    return sum;
+}
+
+fn sum_odd(int n) -> int {
+    int sum = 0;
+    for (int i = 1; i <= n; i = i + 1) {
+        if (i % 2 != 0) {
+            sum = sum + i;
+        }
+    }
+    return sum;
+}
+
+fn logical_and_test(int a, int b, int c) -> int {
+    if (a != 0 && b / a > 2) {
+        return 100;
+    }
+    return 200;
+}
+
+fn logical_or_test(int a, int b) -> int {
+    if (a == 1 || b == 1) {
+        return 1;
+    }
+    return 0;
+}
+
+fn complex_expression(int x, int y, int z) -> int {
+    int result = (x + y) * (z - x) / (y % z);
+    return result;
+}
+
+fn nested_conditionals(int x, int y, int z) -> int {
+    if (x > 0) {
+        if (y > 0) {
+            if (z > 0) {
+                return 111;
+            } else {
+                return 110;
+            }
+        } else {
+            return 100;
+        }
+    } else {
+        return 0;
+    }
+}
+
+fn while_with_break() -> int {
+    int i = 1;
+    int sum = 0;
+    while (1) {
+        sum = sum + i;
+        i = i + 1;
+        if (i > 10) {
+            break;
+        }
+    }
+    return sum;  // сумма от 1 до 10 = 55
+}
+
+fn for_with_continue() -> int {
+    int sum = 0;
+    for (int i = 1; i <= 10; i = i + 1) {
+        if (i % 2 == 0) {
+            continue;
+        }
+        sum = sum + i;
+    }
+    return sum;  // 1 + 3 + 5 + 7 + 9 = 25
+}
+
+fn main() -> int {
+    int result = 0;
+    
+    result = factorial(5);
+    if (result != 120) { return 1; }
+    
+    result = sum_of_squares(5);
+    if (result != 55) { return 2; }
+    
+    result = sum_odd(10);
+    if (result != 25) { return 3; }
+    
+    result = logical_and_test(10, 30, 0);
+    if (result != 100) { return 4; }
+    
+    result = logical_and_test(0, 30, 0);
+    if (result != 200) { return 5; }
+    
+    result = logical_or_test(1, 0);
+    if (result != 1) { return 6; }
+
+    result = logical_or_test(0, 1);
+    if (result != 1) { return 7; }
+    
+    result = logical_or_test(0, 0);
+    if (result != 0) { return 8; }
+    
+    // (10+5)*(3-10)/(5%3) = 15*(-7)/2 = -105/2 = -52
+    result = complex_expression(10, 5, 3);
+    if (result != -52) { return 9; }
+    
+    result = nested_conditionals(1, 1, 1);
+    if (result != 111) { return 10; }
+    
+    result = while_with_break();
+    if (result != 55) { return 11; }
+    
+    result = for_with_continue();
+    if (result != 25) { return 12; }
+    
+    return 0;
+}

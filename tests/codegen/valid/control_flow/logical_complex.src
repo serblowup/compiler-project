@@ -1,0 +1,17 @@
+fn test_complex() -> int {
+    int a = 0;
+    int b = 5;
+    int c = 10;
+    int result = 0;
+    if (a != 0 && b > 0 || c > 5) {
+        result = 1;
+    }
+    if (a == 0 && b > 0 && c > 5) {
+        result = result + 2;
+    }
+    return result;
+}
+
+fn main() -> int {
+    return test_complex();
+}

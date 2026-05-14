@@ -1,0 +1,13 @@
+fn side_effect() -> int {
+    int count = 0;
+    int a = 0;
+    int b = 10;
+    if (a != 0 && b / a > 2) {
+        count = count + 1;
+    }
+    return count;
+}
+
+fn main() -> int {
+    return side_effect();
+}

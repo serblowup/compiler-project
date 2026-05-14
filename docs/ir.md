@@ -206,6 +206,92 @@ function sum: int (n_0: int)
       RETURN s_2
 ```
 
+### Логические операторы с короткой схемой (short-circuit)
+
+**Исходный код:**
+```c
+fn short_circuit_test(int a, int b) -> int {
+    if (a != 0 && b / a > 2) {
+        return 100;
+    }
+    return 200;
+}
+```
+
+**Промежуточное представление:**
+```assembly
+function short_circuit_test: int (a_0: int, b_0: int)
+  entry:
+      t1 = CMP_NE a_0, 0
+      JUMP_IF t1, L2
+      JUMP L1
+  L2:
+      t2 = DIV b_0, a_0
+      t3 = CMP_GT t2, 2
+      JUMP_IF t3, L3
+      JUMP L1
+  L3:
+      RETURN
+  L1:
+      RETURN
+```
+
+### Операторы break и continue
+
+**Исходный код:**
+```c
+fn loop_with_break_continue() -> int {
+    int i = 0;
+    int sum = 0;
+    while (i < 10) {
+        i = i + 1;
+        if (i % 2 == 0) {
+            continue;
+        }
+        if (i > 8) {
+            break;
+        }
+        sum = sum + i;
+    }
+    return sum;
+}
+```
+
+**Промежуточное представление:**
+```assembly
+function loop_with_break_continue: int ()
+  entry:
+      i_1 = 0
+      sum_1 = 0
+      JUMP L1
+  L1:
+      i_2 = PHI (i_1, entry), (i_4, L2)
+      sum_2 = PHI (sum_1, entry), (sum_2, L2)
+      t1 = CMP_LT i_2, 10
+      JUMP_IF_NOT t1, L5
+      JUMP L2
+  L2:
+      t2 = ADD i_2, 1
+      i_3 = t2
+      t3 = MOD i_3, 2
+      t4 = CMP_EQ t3, 0
+      JUMP_IF_NOT t4, L3
+      JUMP L4      ; continue - переход к обновлению
+  L3:
+      t5 = CMP_GT i_3, 8
+      JUMP_IF_NOT t5, L6
+      JUMP L5      ; break - выход из цикла
+  L6:
+      t6 = ADD sum_2, i_3
+      sum_3 = t6
+      JUMP L4
+  L4:
+      i_4 = i_3
+      JUMP L1
+  L5:
+      RETURN sum_2
+```
+
 ## Визуализация CFG
 
 IR может быть экспортирован в формат DOT для визуализации графа потока управления:
@@ -278,6 +364,7 @@ IR Statistics:
 - **Распространение копий** — замена переменных на их копии
 - **Удаление избыточных Phi** — если все аргументы Phi одинаковы
 - **Удаление недостижимых блоков** — удаление блоков, не достижимых из entry
+- **CSE (Common Subexpression Elimination)** — удаление повторяющихся подвыражений
 
 Пример с оптимизациями:
 ```bash
@@ -299,10 +386,11 @@ SSA-оптимизации:              3
   - распространение копий:    1
   - удаление избыточных Phi:  1
   - удаление недостижимого:   0
+CSE (общие подвыражения):     2
 
 Метрики:
-  Удалено инструкций:         4
+  Удалено инструкций:         6
   Уменьшено временных:        2
   Итераций оптимизации:       2
-  Удалено строк:           12.5 %
+  Удалено строк:           15.0 %
 ```

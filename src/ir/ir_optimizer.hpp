@@ -58,6 +58,9 @@ public:
         int redundant_phis = 0;
         int unreachable_code = 0;
         
+        // CSE
+        int cse_eliminations = 0;
+        
         // Метрики
         int total_instructions_removed = 0;
         int temporaries_reduced = 0;
@@ -95,6 +98,9 @@ private:
     bool copyPropagation(IRFunction* func);
     bool eliminateRedundantPhis(IRFunction* func);
     bool removeUnreachableBlocks(IRFunction* func);
+    
+    // CSE
+    bool eliminateCommonSubexpressions(IRFunction* func);
     
     // Вспомогательные методы
     bool isZero(const Operand& op);

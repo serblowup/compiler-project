@@ -6,6 +6,7 @@
 #include "../parser/ast_visitor.hpp"
 #include "../semantic/symbol_table.hpp"
 #include "../semantic/type.hpp"
+#include "../codegen/label_manager.hpp"
 #include <stack>
 #include <unordered_map>
 #include <set>
@@ -23,6 +24,9 @@ private:
     // Счётчики
     int temp_counter;
     int label_counter;
+    
+    // Менеджер меток (может быть nullptr)
+    codegen::LabelManager* label_manager;
     
     // SSA: версионирование переменных
     std::unordered_map<std::string, int> var_versions;
@@ -99,7 +103,7 @@ private:
     void visitAssignmentExprNode(AssignmentExprNode* node) override;
     
 public:
-    explicit IRGenerator(semantic::SymbolTable* sym_table);
+    explicit IRGenerator(semantic::SymbolTable* sym_table, codegen::LabelManager* lm = nullptr);
     ~IRGenerator() override = default;
     
     IRProgram* generate(ProgramNode* program_ast);
