@@ -512,7 +512,6 @@ compiler-project/
 │   └── hello.src
 ├── Makefile # Makefile
 ├── README.md # Readme
-├── short_circuit_demo.src
 ├── src
 │   ├── codegen # Генерация x86-64 ассемблера
 │   │   ├── abi.cpp
